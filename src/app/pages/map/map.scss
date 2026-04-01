@@ -1,0 +1,262 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.map-stats {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 20px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.map-stat {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: var(--text-muted);
+
+  strong {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  mat-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+    color: var(--primary);
+  }
+
+  &.map-stat-green strong { color: #2e7d32; }
+  &.map-stat-red strong { color: var(--danger); }
+}
+
+.map-legend {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.legend-dot {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1.5px #999;
+
+  &.legend-green { background: #2e7d32; box-shadow: 0 0 0 1.5px #2e7d32; }
+  &.legend-red { background: #c62828; box-shadow: 0 0 0 1.5px #c62828; }
+}
+
+.map-container {
+  flex: 1;
+  min-height: 500px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+
+  google-map {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+}
+
+.map-no-api {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 60px 24px;
+  text-align: center;
+  background: #fff8e1;
+  border: 2px dashed #ffd54f;
+  border-radius: 12px;
+
+  mat-icon {
+    font-size: 48px;
+    width: 48px;
+    height: 48px;
+    color: #f9a825;
+  }
+
+  p {
+    font-size: 15px;
+    font-weight: 600;
+    color: #5d4037;
+    margin: 0;
+  }
+
+  .map-no-api-hint {
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--text-muted);
+
+    code {
+      background: #f5f5f5;
+      padding: 1px 5px;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+
+    a { color: var(--primary); }
+  }
+}
+
+.map-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 80px 24px;
+  text-align: center;
+  background: #f9f9f9;
+  border: 2px dashed var(--border);
+  border-radius: 12px;
+
+  mat-icon {
+    font-size: 48px;
+    width: 48px;
+    height: 48px;
+    color: var(--text-muted);
+  }
+
+  p {
+    font-size: 15px;
+    color: var(--text-muted);
+  }
+}
+
+.map-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 80px;
+  font-size: 15px;
+  color: var(--text-muted);
+
+  mat-icon {
+    font-size: 28px;
+    width: 28px;
+    height: 28px;
+  }
+
+  .spin {
+    animation: spin 1.2s linear infinite;
+  }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* Info window styles (rendered inside Google Maps iframe-like container) */
+.info-window {
+  min-width: 200px;
+  font-family: inherit;
+}
+
+.iw-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 6px 6px 0 0;
+  background: #e8f5e9;
+  color: #1b5e20;
+  font-size: 14px;
+
+  &.iw-green {
+    background: #e8f5e9;
+    color: #1b5e20;
+  }
+
+  &.iw-red {
+    background: #ffebee;
+    color: #b71c1c;
+  }
+}
+
+.iw-score {
+  font-size: 13px;
+  font-weight: 700;
+  background: #fff;
+  padding: 2px 7px;
+  border-radius: 10px;
+}
+
+.iw-body {
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.iw-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12.5px;
+  color: #444;
+
+  mat-icon {
+    font-size: 15px;
+    width: 15px;
+    height: 15px;
+    color: var(--primary);
+  }
+}
+
+.iw-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--primary);
+  text-decoration: none;
+
+  mat-icon {
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+  }
+
+  &:hover { text-decoration: underline; }
+}
+
+@media (max-width: 768px) {
+  .map-stats {
+    gap: 12px;
+    padding: 10px 14px;
+  }
+
+  .map-legend {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .map-container {
+    min-height: 380px;
+  }
+}

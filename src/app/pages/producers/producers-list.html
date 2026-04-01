@@ -1,0 +1,250 @@
+<!-- Header -->
+<div class="page-header">
+  <div>
+    <h2>Producteurs recensés</h2>
+    <p class="subtitle">Province de la Mongala · Territoire de Bumba</p>
+  </div>
+  <a routerLink="/producteurs/nouveau" class="btn btn-primary">
+    <mat-icon aria-hidden="true">add</mat-icon> Nouveau recensement
+  </a>
+</div>
+
+<!-- Summary chips -->
+<div class="summary-bar">
+  <div class="summary-chip">
+    <mat-icon aria-hidden="true">group</mat-icon>
+    <span class="chip-value">{{ all().length }}</span>
+    <span class="chip-label">Total</span>
+  </div>
+  <div class="summary-chip chip-green">
+    <mat-icon aria-hidden="true">check_circle</mat-icon>
+    <span class="chip-value">{{ eligibleCount() }}</span>
+    <span class="chip-label">Éligibles</span>
+  </div>
+  <div class="summary-chip chip-red">
+    <mat-icon aria-hidden="true">cancel</mat-icon>
+    <span class="chip-value">{{ all().length - eligibleCount() }}</span>
+    <span class="chip-label">Non éligibles</span>
+  </div>
+  <div class="summary-chip chip-accent">
+    <mat-icon aria-hidden="true">woman</mat-icon>
+    <span class="chip-value">{{ femmesCount() }}</span>
+    <span class="chip-label">Femmes</span>
+  </div>
+</div>
+
+<!-- Filters -->
+<div class="filters" role="search" aria-label="Filtres">
+  <div class="search-wrap">
+    <mat-icon class="search-icon" aria-hidden="true">search</mat-icon>
+    <input
+      class="search-input"
+      type="search"
+      placeholder="Rechercher par nom ou village..."
+      [ngModel]="search()" (ngModelChange)="search.set($event)"
+      aria-label="Rechercher un producteur"
+    />
+  </div>
+  <div class="filter-row">
+    <div class="filter-group">
+      <label class="filter-label" for="f-zone">Zone</label>
+      <select id="f-zone" class="form-control form-control-sm" [ngModel]="zoneFilter()" (ngModelChange)="zoneFilter.set($event)">
+        @for (z of zones; track z) {
+          <option [value]="z">{{ z }}</option>
+        }
+      </select>
+    </div>
+    <div class="filter-group">
+      <label class="filter-label" for="f-elig">Éligibilité</label>
+      <select id="f-elig" class="form-control form-control-sm" [ngModel]="eligFilter()" (ngModelChange)="eligFilter.set($event)">
+        <option value="tous">Tous</option>
+        <option value="eligible">Éligibles (≥ 60)</option>
+        <option value="non">Non éligibles</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <label class="filter-label" for="f-sexe">Sexe</label>
+      <select id="f-sexe" class="form-control form-control-sm" [ngModel]="sexeFilter()" (ngModelChange)="sexeFilter.set($event)">
+        <option value="tous">Tous</option>
+        <option value="homme">Homme</option>
+        <option value="femme">Femme</option>
+      </select>
+    </div>
+    <button class="btn-reset" (click)="resetFilters()" title="Réinitialiser les filtres">
+      <mat-icon>filter_alt_off</mat-icon>
+    </button>
+  </div>
+</div>
+
+<!-- Result count -->
+<div class="result-bar" aria-live="polite">
+  <span class="result-count">{{ filtered().length }} producteur{{ filtered().length > 1 ? 's' : '' }} affiché{{ filtered().length > 1 ? 's' : '' }}</span>
+  @if (filtered().length < all().length) {
+    <span class="result-filter-msg">sur {{ all().length }} au total</span>
+  }
+</div>
+
+<!-- Table (desktop) -->
+<div class="table-card">
+  @if (filtered().length > 0) {
+    <table aria-label="Liste des producteurs">
+      <thead>
+        <tr>
+          <th>Producteur</th>
+          <th class="th-zone">Zone</th>
+          <th class="th-ha">Superficie</th>
+          <th>Score</th>
+          <th class="th-status">Statut</th>
+          <th class="th-actions">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (p of filtered(); track p.id) {
+          <tr [class.row-eligible]="p.score >= 60" [class.row-non]="p.score < 60">
+
+            <!-- Producteur -->
+            <td class="td-producer">
+              <div class="producer-cell">
+                <div class="avatar" [class.avatar-f]="p.sexe === 'femme'">
+                  {{ initials(p.nom) }}
+                </div>
+                <div>
+                  <div class="producer-name">{{ p.nom }}</div>
+                  <div class="producer-meta">
+                    <mat-icon aria-hidden="true">{{ p.sexe === 'femme' ? 'woman' : 'man' }}</mat-icon>
+                    {{ p.sexe }} · {{ p.anneesExperience }} ans d'exp.
+                  </div>
+                </div>
+              </div>
+            </td>
+
+            <!-- Zone -->
+            <td class="td-zone">
+              <div class="village">{{ p.village }}</div>
+              <div class="zone-tag">{{ p.zone }}</div>
+            </td>
+
+            <!-- Superficie -->
+            <td class="td-ha">
+              <span class="ha-value">{{ totalha(p) }}</span>
+              <span class="ha-unit"> ha</span>
+            </td>
+
+            <!-- Score -->
+            <td class="td-score">
+              <div class="score-number" [class.score-good]="p.score >= 60" [class.score-bad]="p.score < 60">
+                {{ p.score }}
+              </div>
+              <div class="score-bar-mini">
+                <div
+                  class="score-bar-fill"
+                  [style.width.%]="p.score"
+                  [style.background]="p.score >= 60 ? '#43a047' : '#ef5350'"
+                ></div>
+              </div>
+              <div class="score-label">/100</div>
+            </td>
+
+            <!-- Statut -->
+            <td class="td-status">
+              @if (p.score >= 60) {
+                <span class="status-badge status-ok">
+                  <mat-icon aria-hidden="true">check_circle</mat-icon> Éligible
+                </span>
+              } @else {
+                <span class="status-badge status-ko">
+                  <mat-icon aria-hidden="true">cancel</mat-icon> Non éligible
+                </span>
+              }
+            </td>
+
+            <!-- Actions -->
+            <td class="td-actions">
+              <div class="actions">
+                <a
+                  [routerLink]="['/producteurs', p.id]"
+                  class="action-btn action-view"
+                  [attr.aria-label]="'Voir ' + p.nom"
+                  title="Voir le détail"
+                >
+                  <mat-icon>visibility</mat-icon>
+                </a>
+                <a
+                  [routerLink]="['/producteurs', p.id, 'modifier']"
+                  class="action-btn action-edit"
+                  [attr.aria-label]="'Modifier ' + p.nom"
+                  title="Modifier"
+                >
+                  <mat-icon>edit</mat-icon>
+                </a>
+                <button
+                  class="action-btn action-delete"
+                  (click)="delete(p)"
+                  [attr.aria-label]="'Supprimer ' + p.nom"
+                  title="Supprimer"
+                >
+                  <mat-icon>delete_outline</mat-icon>
+                </button>
+              </div>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  } @else {
+    <div class="empty-state">
+      <mat-icon>search_off</mat-icon>
+      <p>Aucun producteur ne correspond aux critères.</p>
+      <button class="btn btn-ghost btn-sm" (click)="resetFilters()">Réinitialiser les filtres</button>
+    </div>
+  }
+</div>
+
+<!-- Cards (mobile) -->
+@if (filtered().length > 0) {
+  <ul class="mobile-cards" aria-label="Liste des producteurs">
+    @for (p of filtered(); track p.id) {
+      <li class="mobile-card">
+        <div class="mc-left" [class.mc-eligible]="p.score >= 60" [class.mc-non]="p.score < 60"></div>
+        <div class="mc-body">
+          <div class="mc-top">
+            <div class="avatar" [class.avatar-f]="p.sexe === 'femme'">{{ initials(p.nom) }}</div>
+            <div class="mc-info">
+              <div class="producer-name">{{ p.nom }}</div>
+              <div class="mc-meta">
+                {{ p.village }} · <span class="zone-tag">{{ p.zone }}</span>
+              </div>
+            </div>
+            <div class="mc-score" [class.score-good]="p.score >= 60" [class.score-bad]="p.score < 60">
+              {{ p.score }}<span class="mc-score-denom">/100</span>
+            </div>
+          </div>
+          <div class="mc-bottom">
+            @if (p.score >= 60) {
+              <span class="status-badge status-ok"><mat-icon aria-hidden="true">check_circle</mat-icon> Éligible</span>
+            } @else {
+              <span class="status-badge status-ko"><mat-icon aria-hidden="true">cancel</mat-icon> Non éligible</span>
+            }
+            <div class="actions">
+              <a [routerLink]="['/producteurs', p.id]" class="action-btn action-view" [attr.aria-label]="'Voir ' + p.nom" title="Voir">
+                <mat-icon>visibility</mat-icon>
+              </a>
+              <a [routerLink]="['/producteurs', p.id, 'modifier']" class="action-btn action-edit" [attr.aria-label]="'Modifier ' + p.nom" title="Modifier">
+                <mat-icon>edit</mat-icon>
+              </a>
+              <button class="action-btn action-delete" (click)="delete(p)" [attr.aria-label]="'Supprimer ' + p.nom" title="Supprimer">
+                <mat-icon>delete_outline</mat-icon>
+              </button>
+            </div>
+          </div>
+        </div>
+      </li>
+    }
+  </ul>
+} @else {
+  <div class="empty-state">
+    <mat-icon>search_off</mat-icon>
+    <p>Aucun producteur ne correspond aux critères.</p>
+    <button class="btn btn-ghost btn-sm" (click)="resetFilters()">Réinitialiser les filtres</button>
+  </div>
+}

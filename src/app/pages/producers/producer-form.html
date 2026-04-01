@@ -1,0 +1,319 @@
+<div class="form-page">
+  <div class="form-header">
+    <a routerLink="/producteurs" class="back-btn" aria-label="Retour à la liste">
+      <mat-icon>arrow_back</mat-icon>
+    </a>
+    <div class="header-info">
+      <div class="header-breadcrumb">Producteurs</div>
+      <h2>{{ isEdit() ? 'Modifier le producteur' : 'Nouveau recensement' }}</h2>
+      <p class="header-sub">{{ isEdit() ? 'Mise à jour des informations du producteur' : 'Formulaire de recensement · Territoire de Bumba' }}</p>
+    </div>
+    @if (isEdit()) {
+      <span class="mode-badge mode-edit"><mat-icon aria-hidden="true">edit</mat-icon> Modification</span>
+    } @else {
+      <span class="mode-badge mode-new"><mat-icon aria-hidden="true">add_circle</mat-icon> Nouveau</span>
+    }
+  </div>
+
+  @if (saved()) {
+    <div class="success-banner" role="status"><mat-icon aria-hidden="true">check_circle</mat-icon> Enregistrement réussi !</div>
+  }
+
+  <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
+
+    <!-- 1. Informations générales -->
+    <div class="section-card">
+      <div class="section-head"><span class="section-num">1</span> Informations générales</div>
+      <div class="grid-2">
+        <div class="form-group">
+          <label for="nom">Nom et prénom *</label>
+          <input id="nom" class="form-control" formControlName="nom" type="text" />
+          @if (f['nom'].invalid && f['nom'].touched) {
+            <div class="error-text">Champ obligatoire</div>
+          }
+        </div>
+        <div class="form-group">
+          <label for="telephone">Téléphone</label>
+          <input id="telephone" class="form-control" formControlName="telephone" type="tel" />
+        </div>
+        <div class="form-group">
+          <label for="dateNaissance">Date de naissance</label>
+          <input id="dateNaissance" class="form-control" formControlName="dateNaissance" type="date" />
+        </div>
+        <div class="form-group">
+          <fieldset>
+            <legend class="field-legend">Sexe</legend>
+            <div class="radio-row">
+              <label class="radio-item">
+                <input type="radio" formControlName="sexe" value="homme" /> Homme
+              </label>
+              <label class="radio-item">
+                <input type="radio" formControlName="sexe" value="femme" /> Femme
+              </label>
+            </div>
+          </fieldset>
+        </div>
+        <div class="form-group">
+          <label for="village">Village / Localité *</label>
+          <input id="village" class="form-control" formControlName="village" type="text" />
+        </div>
+        <div class="form-group">
+          <label for="groupement">Groupement</label>
+          <input id="groupement" class="form-control" formControlName="groupement" type="text" />
+        </div>
+        <div class="form-group">
+          <label for="zone">Zone *</label>
+          <select id="zone" class="form-control" formControlName="zone">
+            <option value="">-- Choisir --</option>
+            @for (z of zones; track z) {
+              <option [value]="z">{{ z }}</option>
+            }
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. Situation du producteur -->
+    <div class="section-card">
+      <div class="section-head"><span class="section-num">2</span> Situation du producteur</div>
+      <div class="grid-2">
+        <div class="form-group">
+          <label for="statutFoncier">Statut foncier</label>
+          <select id="statutFoncier" class="form-control" formControlName="statutFoncier">
+            <option value="proprietaire">Propriétaire</option>
+            <option value="exploitant">Exploitant</option>
+            <option value="metayer">Métayer</option>
+            <option value="autre">Autre</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="anneesExperience">Années d'expérience en riziculture</label>
+          <input id="anneesExperience" class="form-control" formControlName="anneesExperience" type="number" min="0" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="check-item">
+          <input type="checkbox" formControlName="membreCooperative" />
+          Membre d'une coopérative / association
+        </label>
+      </div>
+      @if (form.get('membreCooperative')?.value) {
+        <div class="form-group">
+          <label for="nomCooperative">Nom de la coopérative</label>
+          <input id="nomCooperative" class="form-control" formControlName="nomCooperative" type="text" />
+        </div>
+      }
+    </div>
+
+    <!-- 3. Informations sur les champs -->
+    <div class="section-card">
+      <div class="section-head"><span class="section-num">3</span> Informations sur les champs</div>
+      <div formArrayName="champs">
+        @for (champ of champsArray.controls; track champ; let i = $index) {
+          <div class="champ-card" [formGroupName]="i">
+            <div class="champ-title">Champ {{ i + 1 }}</div>
+            @if (champsArray.length > 1) {
+              <button type="button" class="remove-champ" (click)="removeChamp(i)" [attr.aria-label]="'Supprimer champ ' + (i+1)">×</button>
+            }
+            <div class="grid-3">
+              <div class="form-group">
+                <label [for]="'loc'+i">Localisation</label>
+                <input [id]="'loc'+i" class="form-control" formControlName="localisation" type="text" />
+              </div>
+              <div class="form-group">
+                <label [for]="'sup'+i">Superficie (ha)</label>
+                <input [id]="'sup'+i" class="form-control" formControlName="superficie" type="number" min="0" step="0.1" />
+              </div>
+              <div class="form-group">
+                <label [for]="'type'+i">Type de riziculture</label>
+                <select [id]="'type'+i" class="form-control" formControlName="typeRiziculture">
+                  <option value="pluviale">Pluviale</option>
+                  <option value="irriguee">Irriguée</option>
+                  <option value="bas-fond">Bas-fond</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label [for]="'acc'+i">Mode d'accès</label>
+                <select [id]="'acc'+i" class="form-control" formControlName="modeAcces">
+                  <option value="voiture">Voiture</option>
+                  <option value="velo">Vélo</option>
+                  <option value="pied">À pied</option>
+                  <option value="bateau">Bateau</option>
+                  <option value="train">Train</option>
+                </select>
+              </div>
+              <div class="form-group align-end">
+                <label class="check-item">
+                  <input type="checkbox" formControlName="irrigation" />
+                  Irrigation disponible
+                </label>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+      <button type="button" class="btn btn-ghost btn-sm" (click)="addChamp()">+ Ajouter un champ</button>
+    </div>
+
+    <!-- 4. Pratiques environnementales -->
+    <div class="section-card">
+      <div class="section-head"><span class="section-num">4</span> Pratiques environnementales</div>
+      <div class="grid-2">
+        <div>
+          <p class="sub-title">Gestion des sols</p>
+          <div class="checkbox-group">
+            <label class="check-item"><input type="checkbox" formControlName="rotationCultures" /> Rotation des cultures</label>
+            <label class="check-item"><input type="checkbox" formControlName="utilisationCompost" /> Utilisation de compost / fumure organique</label>
+            <label class="check-item"><input type="checkbox" formControlName="signesDegradation" /> Signes de dégradation des sols</label>
+          </div>
+        </div>
+        <div>
+          <p class="sub-title">Gestion de l'eau</p>
+          <div class="form-group">
+            <label for="sourceEau">Source principale d'eau</label>
+            <select id="sourceEau" class="form-control" formControlName="sourceEau">
+              <option value="pluie">Pluie</option>
+              <option value="fleuve">Fleuve</option>
+              <option value="barrage">Barrage</option>
+              <option value="forage">Forage</option>
+            </select>
+          </div>
+          <div class="checkbox-group">
+            <label class="check-item"><input type="checkbox" formControlName="economieEau" /> Techniques d'économie d'eau</label>
+            <label class="check-item"><input type="checkbox" formControlName="parcelleInondable" /> Parcelle exposée aux inondations</label>
+          </div>
+        </div>
+      </div>
+      <div class="grid-2 mt-env">
+        <div>
+          <p class="sub-title">Produits phytosanitaires</p>
+          <div class="checkbox-group">
+            <label class="check-item"><input type="checkbox" formControlName="utilisationPesticides" /> Utilisation de pesticides</label>
+            <label class="check-item"><input type="checkbox" formControlName="formationPesticides" /> Formation à leur utilisation</label>
+          </div>
+        </div>
+        <div>
+          <p class="sub-title">Biodiversité et protection</p>
+          <div class="checkbox-group">
+            <label class="check-item"><input type="checkbox" formControlName="presenceArbres" /> Présence d'arbres ou haies</label>
+            <label class="check-item"><input type="checkbox" formControlName="activiteDeforestation" /> Activité entraînant une déforestation</label>
+            <label class="check-item"><input type="checkbox" formControlName="baiseFaune" /> Baisse de la faune observée</label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5. Risques climatiques -->
+    <div class="section-card">
+      <div class="section-head"><span class="section-num">5</span> Risques climatiques</div>
+      <p class="sub-title">Pertes liées à :</p>
+      <div class="checkbox-row">
+        <label class="check-item"><input type="checkbox" formControlName="perteSec" /> Sécheresse</label>
+        <label class="check-item"><input type="checkbox" formControlName="perteInondation" /> Inondations</label>
+        <label class="check-item"><input type="checkbox" formControlName="perteVents" /> Vents violents</label>
+      </div>
+      <div class="form-group">
+        <label for="strategiesAdaptation">Stratégies d'adaptation</label>
+        <textarea id="strategiesAdaptation" class="form-control" formControlName="strategiesAdaptation" rows="2"></textarea>
+      </div>
+    </div>
+
+    <!-- 6. Production -->
+    <div class="section-card">
+      <div class="section-head"><span class="section-num">6</span> Production</div>
+      <div class="grid-3">
+        <div class="form-group">
+          <label for="varietesCultivees">Variétés cultivées</label>
+          <input id="varietesCultivees" class="form-control" formControlName="varietesCultivees" type="text" />
+        </div>
+        <div class="form-group">
+          <label for="rendementMoyen">Rendement moyen (kg/ha)</label>
+          <input id="rendementMoyen" class="form-control" formControlName="rendementMoyen" type="number" min="0" />
+        </div>
+        <div class="form-group">
+          <label for="campagnesParAn">Campagnes par an</label>
+          <input id="campagnesParAn" class="form-control" formControlName="campagnesParAn" type="number" min="1" max="4" />
+        </div>
+      </div>
+    </div>
+
+    <!-- 7. Contraintes -->
+    <div class="section-card">
+      <div class="section-head"><span class="section-num">7</span> Contraintes majeures</div>
+      <div class="checkbox-row">
+        <label class="check-item"><input type="checkbox" formControlName="manqueEau" /> Manque d'eau</label>
+        <label class="check-item"><input type="checkbox" formControlName="intrantsCouteux" /> Intrants coûteux</label>
+        <label class="check-item"><input type="checkbox" formControlName="accesCred" /> Accès au crédit</label>
+        <label class="check-item"><input type="checkbox" formControlName="degradationSols" /> Dégradation des sols</label>
+        <label class="check-item"><input type="checkbox" formControlName="changementsClimatiques" /> Changements climatiques</label>
+      </div>
+      <div class="form-group">
+        <label for="lieuVente">Lieu de vente</label>
+        <input id="lieuVente" class="form-control" formControlName="lieuVente" type="text" />
+      </div>
+    </div>
+
+    <!-- 8. Besoins prioritaires -->
+    <div class="section-card">
+      <div class="section-head"><span class="section-num">8</span> Besoins prioritaires</div>
+      <div class="form-group">
+        <label for="besoinsPrioritaires">Décrivez les besoins prioritaires</label>
+        <textarea id="besoinsPrioritaires" class="form-control" formControlName="besoinsPrioritaires" rows="3"></textarea>
+      </div>
+    </div>
+
+    <!-- 9. Géolocalisation -->
+    <div class="section-card">
+      <div class="section-head"><span class="section-num">9</span> Géolocalisation</div>
+
+
+
+      <!-- Coordinates fields -->
+      <div class="grid-2 gps-fields">
+        <div class="form-group">
+          <label for="latitude">
+            <mat-icon aria-hidden="true">arrow_upward</mat-icon> Latitude
+          </label>
+          <div class="coord-input-wrap">
+            <input id="latitude" class="form-control" formControlName="latitude" type="number" step="0.000001"
+              placeholder="ex : 2.191400" readonly />
+            @if (f['latitude'].value) {
+              <span class="coord-badge">{{ f['latitude'].value | number:'1.4-6' }}°N</span>
+            }
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="longitude">
+            <mat-icon aria-hidden="true">arrow_forward</mat-icon> Longitude
+          </label>
+          <div class="coord-input-wrap">
+            <input id="longitude" class="form-control" formControlName="longitude" type="number" step="0.000001"
+              placeholder="ex : 22.477300" readonly />
+            @if (f['longitude'].value) {
+              <span class="coord-badge">{{ f['longitude'].value | number:'1.4-6' }}°E</span>
+            }
+          </div>
+        </div>
+      </div>
+
+      @if (f['latitude'].value && f['longitude'].value) {
+        <a
+          class="gps-map-link"
+          [href]="'https://www.openstreetmap.org/?mlat=' + f['latitude'].value + '&mlon=' + f['longitude'].value + '&zoom=15'"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Voir sur OpenStreetMap"
+        >
+          <mat-icon>map</mat-icon> Voir sur la carte
+        </a>
+      }
+    </div>
+
+    <div class="form-actions">
+      <a routerLink="/producteurs" class="btn btn-ghost">Annuler</a>
+      <button type="submit" class="btn btn-primary" [disabled]="form.invalid || saving()">
+        {{ saving() ? 'Enregistrement...' : (isEdit() ? 'Mettre à jour' : 'Enregistrer le producteur') }}
+      </button>
+    </div>
+  </form>
+</div>

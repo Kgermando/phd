@@ -1,0 +1,97 @@
+<!-- Header -->
+<div class="page-header">
+  <div>
+    <h2>Carte des producteurs</h2>
+    <p class="subtitle">Localisation géographique des producteurs recensés</p>
+  </div>
+</div>
+
+@if (loaded()) {
+  <!-- Stats bar -->
+  <div class="map-stats">
+    <div class="map-stat">
+      <mat-icon aria-hidden="true">location_on</mat-icon>
+      <strong>{{ withGpsCount() }}</strong>
+      <span>producteurs localisés</span>
+    </div>
+    <div class="map-stat map-stat-green">
+      <mat-icon aria-hidden="true">check_circle</mat-icon>
+      <strong>{{ eligibleCount() }}</strong>
+      <span>éligibles</span>
+    </div>
+    <div class="map-stat map-stat-red">
+      <mat-icon aria-hidden="true">cancel</mat-icon>
+      <strong>{{ withGpsCount() - eligibleCount() }}</strong>
+      <span>non éligibles</span>
+    </div>
+    <div class="map-legend">
+      <span class="legend-dot legend-green"></span> Éligible
+      <span class="legend-dot legend-red"></span> Non éligible
+    </div>
+  </div>
+
+  @if (withGpsCount() === 0) {
+    <div class="map-empty">
+      <mat-icon>location_off</mat-icon>
+      <p>Aucun producteur avec coordonnées GPS enregistrées.</p>
+      <a routerLink="/producteurs/nouveau" class="btn btn-primary">
+        <mat-icon aria-hidden="true">add</mat-icon> Ajouter un producteur
+      </a>
+    </div>
+  } @else {
+    <div class="map-container">
+      <google-map
+        [center]="center()"
+        [zoom]="zoom()"
+        [options]="mapOptions()"
+        width="100%"
+        height="100%"
+      >
+        @for (p of producers(); track p.id) {
+          <map-marker
+            [position]="p.position"
+            [options]="markerOptions(p)"
+            (mapClick)="openInfo(marker, p)"
+            #marker="mapMarker"
+          />
+        }
+
+        <map-info-window (closeclick)="closeInfo()">
+          @if (selected()) {
+            <div class="info-window">
+              <div class="iw-header" [class.iw-green]="selected()!.score >= 60" [class.iw-red]="selected()!.score < 60">
+                <strong>{{ selected()!.nom }}</strong>
+                <span class="iw-score">{{ selected()!.score }}/100</span>
+              </div>
+              <div class="iw-body">
+                <div class="iw-row">
+                  <mat-icon aria-hidden="true">place</mat-icon>
+                  {{ selected()!.village }} · {{ selected()!.zone }}
+                </div>
+                <div class="iw-row">
+                  <mat-icon aria-hidden="true">person</mat-icon>
+                  {{ selected()!.sexe === 'femme' ? 'Femme' : 'Homme' }}
+                </div>
+                <div class="iw-row">
+                  <mat-icon aria-hidden="true">gps_fixed</mat-icon>
+                  {{ selected()!.latitude }}°N, {{ selected()!.longitude }}°E
+                </div>
+                <a
+                  class="iw-link"
+                  [routerLink]="['/producteurs', selected()!.id]"
+                >
+                  <mat-icon aria-hidden="true">open_in_new</mat-icon> Voir la fiche
+                </a>
+              </div>
+            </div>
+          }
+        </map-info-window>
+      </google-map>
+    </div>
+  }
+} @else {
+  <div class="map-loading">
+    <mat-icon class="spin">sync</mat-icon>
+    <span>Chargement de la carte…</span>
+  </div>
+}

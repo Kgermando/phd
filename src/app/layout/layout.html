@@ -1,0 +1,53 @@
+<div class="app-shell">
+  <aside class="sidebar" [class.open]="menuOpen()" [attr.aria-hidden]="!menuOpen() || null">
+    <div class="sidebar-logo">
+      <mat-icon aria-hidden="true">grass</mat-icon>
+      <h1>RizSuivi</h1>
+    </div>
+    <nav aria-label="Navigation principale">
+      <a routerLink="/dashboard" routerLinkActive="active" (click)="closeMenu()">
+        <mat-icon aria-hidden="true">dashboard</mat-icon> Tableau de bord
+      </a>
+      <a routerLink="/producteurs" routerLinkActive="active" (click)="closeMenu()">
+        <mat-icon aria-hidden="true">group</mat-icon> Producteurs
+      </a>
+      <a routerLink="/carte" routerLinkActive="active" (click)="closeMenu()">
+        <mat-icon aria-hidden="true">map</mat-icon> Carte
+      </a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-info">Connecté en tant que</div>
+      <div class="user-name">{{ auth.currentUser()?.fullName }}</div>
+      <div class="user-info">{{ auth.currentUser()?.role === 'admin' ? 'Administrateur' : 'Agent recenseur' }}</div>
+      <button class="btn-logout mt-2" (click)="logout()"><mat-icon aria-hidden="true">logout</mat-icon> Se déconnecter</button>
+    </div>
+  </aside>
+  <div class="sidebar-overlay" [class.active]="menuOpen()" (click)="closeMenu()" aria-hidden="true"></div>
+
+  <div class="main-area">
+    <header class="topbar">
+      <button class="menu-toggle" (click)="toggleMenu()" aria-label="Ouvrir le menu"><mat-icon>menu</mat-icon></button>
+      <div class="topbar-left">
+        <div class="topbar-project">
+          <span class="topbar-title">Projet Rizicole – Mongala</span>
+          <span class="topbar-sub">Recensement des petits producteurs</span>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <div class="topbar-divider" aria-hidden="true"></div>
+        <div class="topbar-user">
+          <div class="user-avatar" aria-hidden="true">
+            {{ auth.currentUser()?.fullName?.charAt(0)?.toUpperCase() }}
+          </div>
+          <div class="user-details">
+            <span class="user-name">{{ auth.currentUser()?.fullName }}</span>
+            <span class="user-role">{{ auth.currentUser()?.role === 'admin' ? 'Administrateur' : 'Agent' }}</span>
+          </div>
+        </div>
+      </div>
+    </header>
+    <main class="page-content">
+      <router-outlet />
+    </main>
+  </div>
+</div>

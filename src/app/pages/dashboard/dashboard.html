@@ -1,0 +1,105 @@
+<div class="page-header">
+  <h2>Tableau de bord</h2>
+  <p>Vue d'ensemble du recensement des riziculteurs – Province de la Mongala, Territoire de Bumba</p>
+</div>
+
+@if (loaded()) {
+  <!-- KPI Cards -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-value">{{ total() }}</div>
+      <div class="stat-label"><mat-icon aria-hidden="true">group</mat-icon> Producteurs recensés</div>
+    </div>
+    <div class="stat-card green">
+      <div class="stat-value">{{ eligible() }}</div>
+      <div class="stat-label"><mat-icon aria-hidden="true">check_circle</mat-icon> Éligibles (score ≥ 60)</div>
+    </div>
+    <div class="stat-card red">
+      <div class="stat-value">{{ nonEligible() }}</div>
+      <div class="stat-label"><mat-icon aria-hidden="true">cancel</mat-icon> Non éligibles</div>
+    </div>
+    <div class="stat-card accent">
+      <div class="stat-value">{{ avgScore() }}</div>
+      <div class="stat-label"><mat-icon aria-hidden="true">star</mat-icon> Score moyen / 100</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">{{ femmes() }}</div>
+      <div class="stat-label"><mat-icon aria-hidden="true">woman</mat-icon> Femmes recensées</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">{{ zones().length }}</div>
+      <div class="stat-label"><mat-icon aria-hidden="true">place</mat-icon> Zones couvertes</div>
+    </div>
+  </div>
+
+  <!-- Charts row -->
+  <div class="grid-2">
+    <!-- Par zone -->
+    <div class="card">
+      <div class="section-title"><mat-icon aria-hidden="true">place</mat-icon> Producteurs par zone</div>
+      @for (z of zones(); track z.zone) {
+        <div class="zone-row">
+          <span class="zone-name">{{ z.zone }}</span>
+          <div class="zone-bar-wrap">
+            <div class="score-bar-bg">
+              <div
+                class="score-bar-fill"
+                [style.width.%]="(z.count / maxZoneCount()) * 100"
+                [style.background]="'var(--primary)'"
+              ></div>
+            </div>
+          </div>
+          <span class="zone-count">{{ z.count }}</span>
+        </div>
+      }
+    </div>
+
+    <!-- Éligibilité par zone -->
+    <div class="card">
+      <div class="section-title"><mat-icon aria-hidden="true">check_circle</mat-icon> Taux d'éligibilité par zone</div>
+      @for (z of zones(); track z.zone) {
+        <div class="zone-row">
+          <span class="zone-name">{{ z.zone }}</span>
+          <div class="zone-bar-wrap">
+            <div class="score-bar-bg">
+              <div
+                class="score-bar-fill"
+                [style.width.%]="z.count > 0 ? (z.eligible / z.count) * 100 : 0"
+                [style.background]="'#43a047'"
+              ></div>
+            </div>
+          </div>
+          <span class="zone-count">{{ z.count > 0 ? pct(z.eligible, z.count) : 0 }}%</span>
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Recent producers -->
+  <div class="card mb-3">
+    <div class="section-title recent-header">
+      <span><mat-icon aria-hidden="true">schedule</mat-icon> Derniers producteurs recensés</span>
+      <a routerLink="/producteurs" class="btn btn-ghost btn-sm">Voir tous</a>
+    </div>
+    <ul class="recent-list" aria-label="Derniers producteurs">
+      @for (p of recent(); track p.id) {
+        <li class="recent-item">
+          <div>
+            <div class="recent-name">{{ p.nom }}</div>
+            <div class="recent-meta">{{ p.village }} · {{ p.zone }}</div>
+          </div>
+          <span
+            class="badge"
+            [class.badge-green]="(p.score ?? 0) >= 60"
+            [class.badge-red]="(p.score ?? 0) < 60"
+          >
+            {{ p.score }}/100
+          </span>
+        </li>
+      }
+    </ul>
+  </div>
+
+} @else {
+  <p class="text-muted text-center">Chargement des données...</p>
+}

@@ -1,0 +1,238 @@
+@if (producer()) {
+  <div class="detail-page">
+    <div class="detail-header">
+      <div class="detail-header-left">
+        <a routerLink="/producteurs" class="back-btn" aria-label="Retour à la liste">
+          <mat-icon>arrow_back</mat-icon>
+        </a>
+        <div class="header-info">
+          <div class="header-breadcrumb">Producteurs</div>
+          <h2>{{ producer()!.nom }}</h2>
+          <p class="header-sub">Recensé le {{ producer()!.dateRecensement }} · Zone {{ producer()!.zone }}</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <a [routerLink]="['/producteurs', producer()!.id, 'modifier']" class="btn btn-ghost">
+          <mat-icon aria-hidden="true">edit</mat-icon> Modifier
+        </a>
+        <button class="btn btn-danger" (click)="delete()">
+          <mat-icon aria-hidden="true">delete</mat-icon> Supprimer
+        </button>
+      </div>
+    </div>
+
+    <!-- Profile -->
+    <div class="profile-card">
+      <div [class]="producer()!.sexe === 'femme' ? 'avatar avatar-f' : 'avatar'" aria-hidden="true">
+        {{ producer()!.nom.charAt(0).toUpperCase() }}
+      </div>
+      <div class="profile-info">
+        <h3>{{ producer()!.nom }}</h3>
+        <div class="profile-meta">
+          <span class="meta-chip">{{ producer()!.sexe }}</span>
+          <span class="meta-chip"><mat-icon aria-hidden="true">place</mat-icon> {{ producer()!.village }}, {{ producer()!.zone }}</span>
+          <span class="meta-chip">{{ producer()!.anneesExperience }} ans d'expérience</span>
+          @if (producer()!.membreCooperative) {
+            <span class="meta-chip"><mat-icon aria-hidden="true">handshake</mat-icon> {{ producer()!.nomCooperative || 'Coopérative' }}</span>
+          }
+          @if (producer()!.telephone) {
+            <span class="meta-chip"><mat-icon aria-hidden="true">phone</mat-icon> {{ producer()!.telephone }}</span>
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- Scoring -->
+    @if (scoring()) {
+      <div class="score-card">
+        <div class="score-banner">
+          <div>
+            <div class="score-big" [class.eligible]="scoring()!.eligible" [class.non]="!scoring()!.eligible">
+              {{ scoring()!.total }}<span class="score-denom">/100</span>
+            </div>
+            <div class="score-subtitle">Score de sélection</div>
+          </div>
+          <div
+            class="eligibility-badge"
+            [class.eligible-badge]="scoring()!.eligible"
+            [class.ineligible-badge]="!scoring()!.eligible"
+          >
+            <mat-icon aria-hidden="true">{{ scoring()!.eligible ? 'check_circle' : 'cancel' }}</mat-icon>
+            {{ scoring()!.eligible ? 'Éligible au projet' : 'Non éligible (seuil : 60/100)' }}
+          </div>
+        </div>
+
+        <!-- Overall bar -->
+        <div class="overall-bar-wrap">
+          <div class="score-bar-bg overall-bar">
+            <div
+              class="score-bar-fill"
+              [style.width.%]="scoring()!.total"
+              [style.background]="scoring()!.eligible ? '#43a047' : '#ef5350'"
+            ></div>
+          </div>
+          <div class="bar-labels">
+            <span>0</span>
+            <span class="bar-threshold">Seuil : 60</span>
+            <span>100</span>
+          </div>
+        </div>
+
+        <!-- Criteria detail -->
+        <ul class="criteria-list" aria-label="Détail du scoring">
+          @for (d of scoring()!.details; track d.critere) {
+            <li class="criteria-item">
+              <span class="crit-name">{{ d.critere }}</span>
+              <span class="crit-desc">{{ d.description }}</span>
+              <div class="crit-bar">
+                <div class="score-bar-bg">
+                  <div
+                    class="score-bar-fill"
+                    [style.width.%]="(d.score / d.max) * 100"
+                    [style.background]="d.score / d.max >= 0.6 ? '#43a047' : '#ef5350'"
+                  ></div>
+                </div>
+              </div>
+              <span class="crit-score">{{ d.score }}/{{ d.max }}</span>
+            </li>
+          }
+        </ul>
+      </div>
+    }
+
+    <!-- Info cards -->
+    <div class="info-grid">
+      <div class="info-card">
+        <div class="info-card-title"><mat-icon aria-hidden="true">info</mat-icon> Informations générales</div>
+        <div class="info-row">
+          <span class="info-label">Date de naissance</span>
+          <span class="info-value">{{ producer()!.dateNaissance || '—' }}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Groupement</span>
+          <span class="info-value">{{ producer()!.groupement || '—' }}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Statut foncier</span>
+          <span class="info-value">{{ producer()!.statutFoncier }}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Coopérative</span>
+          <span class="info-value">{{ producer()!.membreCooperative ? (producer()!.nomCooperative || 'Oui') : 'Non' }}</span>
+        </div>
+      </div>
+
+      <div class="info-card">
+        <div class="info-card-title"><mat-icon aria-hidden="true">grass</mat-icon> Production</div>
+        <div class="info-row">
+          <span class="info-label">Variétés</span>
+          <span class="info-value">{{ producer()!.varietesCultivees || '—' }}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Rendement moyen</span>
+          <span class="info-value">{{ producer()!.rendementMoyen }} kg/ha</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Campagnes/an</span>
+          <span class="info-value">{{ producer()!.campagnesParAn }}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Lieu de vente</span>
+          <span class="info-value">{{ producer()!.lieuVente || '—' }}</span>
+        </div>
+      </div>
+
+      <div class="info-card">
+        <div class="info-card-title"><mat-icon aria-hidden="true">eco</mat-icon> Pratiques environnementales</div>
+        <div class="info-row">
+          <span class="info-label">Rotation cultures</span>
+          <span class="info-value" [class.bool-yes]="producer()!.rotationCultures" [class.bool-no]="!producer()!.rotationCultures">
+            {{ producer()!.rotationCultures ? 'Oui' : 'Non' }}
+          </span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Compost/fumure</span>
+          <span class="info-value" [class.bool-yes]="producer()!.utilisationCompost" [class.bool-no]="!producer()!.utilisationCompost">
+            {{ producer()!.utilisationCompost ? 'Oui' : 'Non' }}
+          </span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Source d'eau</span>
+          <span class="info-value">{{ producer()!.sourceEau }}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Présence arbres/haies</span>
+          <span class="info-value" [class.bool-yes]="producer()!.presenceArbres" [class.bool-no]="!producer()!.presenceArbres">
+            {{ producer()!.presenceArbres ? 'Oui' : 'Non' }}
+          </span>
+        </div>
+      </div>
+
+      <div class="info-card">
+        <div class="info-card-title"><mat-icon aria-hidden="true">thunderstorm</mat-icon> Risques climatiques</div>
+        <div class="info-row">
+          <span class="info-label">Sécheresse</span>
+          <span class="info-value" [class.bool-yes]="producer()!.perteSec" [class.bool-no]="!producer()!.perteSec">
+            {{ producer()!.perteSec ? 'Oui' : 'Non' }}
+          </span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Inondations</span>
+          <span class="info-value" [class.bool-yes]="producer()!.perteInondation" [class.bool-no]="!producer()!.perteInondation">
+            {{ producer()!.perteInondation ? 'Oui' : 'Non' }}
+          </span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Vents violents</span>
+          <span class="info-value" [class.bool-yes]="producer()!.perteVents" [class.bool-no]="!producer()!.perteVents">
+            {{ producer()!.perteVents ? 'Oui' : 'Non' }}
+          </span>
+        </div>
+        @if (producer()!.strategiesAdaptation) {
+          <div class="info-row">
+            <span class="info-label">Stratégie</span>
+            <span class="info-value info-value-sm">{{ producer()!.strategiesAdaptation }}</span>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Champs -->
+    <div class="info-card champs-card">
+      <div class="info-card-title"><mat-icon aria-hidden="true">map</mat-icon> Champs ({{ producer()!.champs.length }})</div>
+      @for (c of producer()!.champs; track c.localisation) {
+        <div class="champ-chip">
+          <mat-icon aria-hidden="true">place</mat-icon> {{ c.localisation }} · {{ c.superficie }} ha · {{ c.typeRiziculture }} · {{ c.irrigation ? 'Irrigué' : 'Non irrigué' }} · {{ c.modeAcces }}
+        </div>
+      }
+    </div>
+
+    <!-- GPS -->
+    @if (producer()!.latitude && producer()!.longitude) {
+      <div class="info-card gps-card">
+        <div class="info-card-title"><mat-icon aria-hidden="true">gps_fixed</mat-icon> Géolocalisation</div>
+        <div class="info-row">
+          <span class="info-label">Latitude</span>
+          <span class="info-value">{{ producer()!.latitude }}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Longitude</span>
+          <span class="info-value">{{ producer()!.longitude }}</span>
+        </div>
+      </div>
+    }
+
+    <!-- Besoins -->
+    @if (producer()!.besoinsPrioritaires) {
+      <div class="info-card">
+        <div class="info-card-title"><mat-icon aria-hidden="true">lightbulb</mat-icon> Besoins prioritaires</div>
+        <p class="besoins-text">{{ producer()!.besoinsPrioritaires }}</p>
+      </div>
+    }
+  </div>
+} @else if (notFound()) {
+  <div class="not-found">
+    <p>Producteur introuvable.</p>
+    <a routerLink="/producteurs" class="btn btn-primary mt-3">← Retour à la liste</a>
+  </div>
+}
