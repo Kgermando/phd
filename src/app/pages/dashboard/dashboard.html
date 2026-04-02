@@ -23,53 +23,238 @@
       <div class="stat-label"><mat-icon aria-hidden="true">star</mat-icon> Score moyen / 100</div>
     </div>
     <div class="stat-card">
-      <div class="stat-value">{{ femmes() }}</div>
-      <div class="stat-label"><mat-icon aria-hidden="true">woman</mat-icon> Femmes recensées</div>
-    </div>
-    <div class="stat-card">
       <div class="stat-value">{{ zones().length }}</div>
-      <div class="stat-label"><mat-icon aria-hidden="true">place</mat-icon> Zones couvertes</div>
+      <div class="stat-label"><mat-icon aria-hidden="true">place</mat-icon> Secteurs géographiques</div>
     </div>
   </div>
 
-  <!-- Charts row -->
+  <!-- ── Ligne 1 : Sexe (donut) + Courbe d'évolution ── -->
   <div class="grid-2">
-    <!-- Par zone -->
+    <!-- Donut : Répartition par sexe -->
     <div class="card">
-      <div class="section-title"><mat-icon aria-hidden="true">place</mat-icon> Producteurs par zone</div>
-      @for (z of zones(); track z.zone) {
+      <div class="section-title"><mat-icon aria-hidden="true">wc</mat-icon> Répartition par sexe</div>
+      <div
+        class="donut-wrapper"
+        role="img"
+        [attr.aria-label]="'Femmes : ' + (total() ? pct(femmes(), total()) : 0) + '%, Hommes : ' + (total() ? pct(hommes(), total()) : 0) + '%'"
+      >
+        <svg class="donut-svg" viewBox="0 0 120 120" aria-hidden="true" focusable="false">
+          <circle cx="60" cy="60" r="50" fill="none" stroke="#e0e0e0" stroke-width="16"/>
+          <circle cx="60" cy="60" r="50" fill="none" stroke="#e91e63" stroke-width="16"
+            [attr.stroke-dasharray]="sexeDonut().fDash"
+            [attr.stroke-dashoffset]="sexeDonut().fOffset"
+            transform="rotate(-90 60 60)"/>
+          <circle cx="60" cy="60" r="50" fill="none" stroke="var(--primary)" stroke-width="16"
+            [attr.stroke-dasharray]="sexeDonut().hDash"
+            [attr.stroke-dashoffset]="sexeDonut().hOffset"
+            transform="rotate(-90 60 60)"/>
+        </svg>
+        <div class="donut-center" aria-hidden="true">
+          <span class="donut-value">{{ total() }}</span>
+          <span class="donut-sub">total</span>
+        </div>
+      </div>
+      <div class="donut-legend">
+        <div class="legend-item">
+          <span class="legend-dot" style="background:#e91e63"></span>
+          Femmes : <strong>{{ femmes() }}</strong>
+          <span class="legend-pct">({{ total() ? pct(femmes(), total()) : 0 }}%)</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-dot" style="background:var(--primary)"></span>
+          Hommes : <strong>{{ hommes() }}</strong>
+          <span class="legend-pct">({{ total() ? pct(hommes(), total()) : 0 }}%)</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Courbe : Évolution des recensements par mois -->
+    <div class="card">
+      <div class="section-title"><mat-icon aria-hidden="true">show_chart</mat-icon> Évolution des recensements</div>
+      @if (lineChartDots().length > 0) {
+        <svg
+          class="line-svg"
+          viewBox="0 0 360 90"
+          role="img"
+          aria-label="Courbe d'évolution du nombre de recensements par mois"
+          focusable="false"
+        >
+          <!-- Grille horizontale légère -->
+          <line x1="0" y1="8"  x2="360" y2="8"  stroke="#f0f0f0" stroke-width="1"/>
+          <line x1="0" y1="44" x2="360" y2="44" stroke="#f0f0f0" stroke-width="1"/>
+          <line x1="0" y1="72" x2="360" y2="72" stroke="#f0f0f0" stroke-width="1"/>
+          <!-- Aire sous la courbe -->
+          <path [attr.d]="lineChartAreaPath()" class="line-area"/>
+          <!-- Courbe principale -->
+          <path [attr.d]="lineChartPath()" class="line-path"/>
+          <!-- Points -->
+          @for (dot of lineChartDots(); track dot.label) {
+            <circle [attr.cx]="dot.x" [attr.cy]="dot.y" r="4" class="line-dot">
+              <title>{{ dot.label }} : {{ dot.count }} producteur(s)</title>
+            </circle>
+          }
+        </svg>
+        <!-- Étiquettes axe X -->
+        <div class="line-x-labels" aria-hidden="true">
+          @for (dot of lineChartDots(); track dot.label) {
+            <span>{{ dot.label }}</span>
+          }
+        </div>
+        <!-- Étiquettes valeurs -->
+        <div class="line-values" aria-hidden="true">
+          @for (dot of lineChartDots(); track dot.label) {
+            <span>{{ dot.count }}</span>
+          }
+        </div>
+      } @else {
+        <p class="text-muted">Pas encore de données.</p>
+      }
+    </div>
+  </div>
+
+  <!-- ── Ligne 2 : Statut foncier (pie) + Source d'eau (pie) ── -->
+  <div class="grid-2">
+    <!-- Pie : Statut foncier -->
+    <div class="card">
+      <div class="section-title"><mat-icon aria-hidden="true">gavel</mat-icon> Statut foncier</div>
+      <div class="pie-wrap" role="img" aria-label="Camembert statut foncier">
+        <svg class="pie-svg" viewBox="0 0 120 120" aria-hidden="true" focusable="false">
+          @for (s of statutFoncierPie(); track s.label) {
+            @if (s.d) {
+              <path [attr.d]="s.d" [attr.fill]="s.color">
+                <title>{{ s.label }} : {{ s.count }} ({{ s.pct }}%)</title>
+              </path>
+            }
+          }
+        </svg>
+        <div class="pie-legend">
+          @for (s of statutFoncierPie(); track s.label) {
+            <div class="legend-item">
+              <span class="legend-dot" [style.background]="s.color"></span>
+              {{ s.label }} <strong>{{ s.count }}</strong>
+              <span class="legend-pct">({{ s.pct }}%)</span>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- Pie : Source d'eau -->
+    <div class="card">
+      <div class="section-title"><mat-icon aria-hidden="true">water_drop</mat-icon> Source d'eau principale</div>
+      <div class="pie-wrap" role="img" aria-label="Camembert source d'eau">
+        <svg class="pie-svg" viewBox="0 0 120 120" aria-hidden="true" focusable="false">
+          @for (s of sourceEauPie(); track s.label) {
+            @if (s.d) {
+              <path [attr.d]="s.d" [attr.fill]="s.color">
+                <title>{{ s.label }} : {{ s.count }} ({{ s.pct }}%)</title>
+              </path>
+            }
+          }
+        </svg>
+        <div class="pie-legend">
+          @for (s of sourceEauPie(); track s.label) {
+            <div class="legend-item">
+              <span class="legend-dot" [style.background]="s.color"></span>
+              {{ s.label }} <strong>{{ s.count }}</strong>
+              <span class="legend-pct">({{ s.pct }}%)</span>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Ligne 3 : Type de riziculture (pie) + Coopérative (pie) ── -->
+  <div class="grid-2">
+    <!-- Pie : Type de riziculture -->
+    <div class="card">
+      <div class="section-title"><mat-icon aria-hidden="true">grass</mat-icon> Type de riziculture</div>
+      <div class="pie-wrap" role="img" aria-label="Camembert type de riziculture">
+        <svg class="pie-svg" viewBox="0 0 120 120" aria-hidden="true" focusable="false">
+          @for (s of typeRizPie(); track s.label) {
+            @if (s.d) {
+              <path [attr.d]="s.d" [attr.fill]="s.color">
+                <title>{{ s.label }} : {{ s.count }} ({{ s.pct }}%)</title>
+              </path>
+            }
+          }
+        </svg>
+        <div class="pie-legend">
+          @for (s of typeRizPie(); track s.label) {
+            <div class="legend-item">
+              <span class="legend-dot" [style.background]="s.color"></span>
+              {{ s.label }} <strong>{{ s.count }}</strong>
+              <span class="legend-pct">({{ s.pct }}%)</span>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- Pie : Coopérative -->
+    <div class="card">
+      <div class="section-title"><mat-icon aria-hidden="true">handshake</mat-icon> Appartenance à une coopérative</div>
+      <div class="pie-wrap" role="img" aria-label="Camembert appartenance coopérative">
+        <svg class="pie-svg" viewBox="0 0 120 120" aria-hidden="true" focusable="false">
+          @for (s of cooperativePie(); track s.label) {
+            @if (s.d) {
+              <path [attr.d]="s.d" [attr.fill]="s.color">
+                <title>{{ s.label }} : {{ s.count }} ({{ s.pct }}%)</title>
+              </path>
+            }
+          }
+        </svg>
+        <div class="pie-legend">
+          @for (s of cooperativePie(); track s.label) {
+            <div class="legend-item">
+              <span class="legend-dot" [style.background]="s.color"></span>
+              {{ s.label }} <strong>{{ s.count }}</strong>
+              <span class="legend-pct">({{ s.pct }}%)</span>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Ligne 4 : Tranche d'âge (barres) + Secteurs géographiques ── -->
+  <div class="grid-2">
+    <!-- Barres : Tranche d'âge -->
+    <div class="card">
+      <div class="section-title"><mat-icon aria-hidden="true">cake</mat-icon> Tranche d'âge</div>
+      @for (s of trancheAgeStats(); track s.label) {
         <div class="zone-row">
-          <span class="zone-name">{{ z.zone }}</span>
+          <span class="zone-name">{{ s.label }}</span>
           <div class="zone-bar-wrap">
             <div class="score-bar-bg">
-              <div
-                class="score-bar-fill"
-                [style.width.%]="(z.count / maxZoneCount()) * 100"
-                [style.background]="'var(--primary)'"
-              ></div>
+              <div class="score-bar-fill"
+                [style.width.%]="(s.count / maxTrancheAge()) * 100"
+                style="background:var(--accent)">
+              </div>
             </div>
           </div>
-          <span class="zone-count">{{ z.count }}</span>
+          <span class="zone-count">{{ s.count }}</span>
         </div>
       }
     </div>
 
-    <!-- Éligibilité par zone -->
+    <!-- Barres : Producteurs par secteur géographique -->
     <div class="card">
-      <div class="section-title"><mat-icon aria-hidden="true">check_circle</mat-icon> Taux d'éligibilité par zone</div>
+      <div class="section-title"><mat-icon aria-hidden="true">place</mat-icon> Producteurs par secteur géographique</div>
+      <p class="chart-subtitle">Secteurs = localités administratives du Territoire de Bumba</p>
       @for (z of zones(); track z.zone) {
         <div class="zone-row">
           <span class="zone-name">{{ z.zone }}</span>
           <div class="zone-bar-wrap">
             <div class="score-bar-bg">
-              <div
-                class="score-bar-fill"
-                [style.width.%]="z.count > 0 ? (z.eligible / z.count) * 100 : 0"
-                [style.background]="'#43a047'"
-              ></div>
+              <div class="score-bar-fill"
+                [style.width.%]="(z.count / maxZoneCount()) * 100"
+                style="background:var(--primary)">
+              </div>
             </div>
           </div>
-          <span class="zone-count">{{ z.count > 0 ? pct(z.eligible, z.count) : 0 }}%</span>
+          <span class="zone-count">{{ z.count }}</span>
         </div>
       }
     </div>
