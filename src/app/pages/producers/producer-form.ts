@@ -1,8 +1,10 @@
 import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { DecimalPipe } from '@angular/common';
 import { FormArray, FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { MatIcon } from '@angular/material/icon';
+import { map } from 'rxjs';
 import { ProducersService } from '../../services/producers.service';
 import { Producer } from '../../models/models';
 
@@ -80,6 +82,11 @@ export class ProducerFormComponent implements OnInit {
     longitude: [null],
   });
 
+  formInvalid = toSignal(
+    this.form.statusChanges.pipe(map(s => s !== 'VALID')),
+    { initialValue: true },
+  );
+
   get f() { return this.form.controls; }
   get champsArray(): FormArray { return this.form.get('champs') as FormArray; }
 
@@ -141,7 +148,13 @@ export class ProducerFormComponent implements OnInit {
       if (p) {
         while (this.champsArray.length > 0) this.champsArray.removeAt(0);
         for (const _ of (p.champs ?? [])) this.champsArray.push(this.buildChamp());
-        this.form.patchValue(p);
+        // The backend returns date_naissance as an ISO 8601 string (time.Time).
+        // The date input requires YYYY-MM-DD, so slice off the time part.
+        const patchValue: Partial<Producer> = { ...p };
+        if (patchValue.date_naissance) {
+          patchValue.date_naissance = patchValue.date_naissance.substring(0, 10);
+        }
+        this.form.patchValue(patchValue);
       }
     } else {
       this.locateMe();
@@ -153,6 +166,11 @@ export class ProducerFormComponent implements OnInit {
     this.saving.set(true);
     try {
       const val = this.form.getRawValue() as Partial<Producer>;
+      // The date input returns YYYY-MM-DD; the backend expects a full ISO 8601
+      // time.Time value, so append the UTC time component before sending.
+      if (val.date_naissance) {
+        val.date_naissance = `${val.date_naissance}T00:00:00Z`;
+      }
       if (this.isEdit() && this.editUUID) {
         await this.producersService.updateProducer(this.editUUID, val);
         this.saving.set(false);

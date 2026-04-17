@@ -202,8 +202,8 @@
 .score-inputs-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px 24px;
-  margin-bottom: 16px;
+  gap: 10px 20px;
+  margin-bottom: 20px;
 
   @media (max-width: 640px) {
     grid-template-columns: 1fr;
@@ -213,18 +213,44 @@
 .score-input-row {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
+  background: #f8faf8;
+  border: 1px solid #e0e8e0;
+  border-radius: 8px;
+  padding: 10px 14px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+
+  &:focus-within {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(67, 160, 71, 0.12);
+    background: #fff;
+  }
 
   label {
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--text-muted);
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--primary-dark);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
   }
 }
 
 .score-num-input {
   width: 100%;
-  max-width: 120px;
+  max-width: 100%;
+  border: none;
+  background: transparent;
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--text);
+  padding: 0;
+  outline: none;
+  -moz-appearance: textfield;
+
+  &::-webkit-inner-spin-button,
+  &::-webkit-outer-spin-button {
+    opacity: 0.4;
+  }
 }
 
 .score-form-actions {

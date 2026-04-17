@@ -320,7 +320,7 @@
 
     <div class="form-actions">
       <a routerLink="/producteurs" class="btn btn-ghost">Annuler</a>
-      <button type="submit" class="btn btn-primary" [disabled]="form.invalid || saving()">
+      <button type="submit" class="btn btn-primary" [disabled]="formInvalid() || saving()">
         {{ saving() ? 'Enregistrement...' : (isEdit() ? 'Mettre à jour' : 'Enregistrer le producteur') }}
       </button>
     </div>
