@@ -2,7 +2,7 @@
 // Configuration de production
 export const environment = {
   production: true,
-  apiUrl: 'https://api.votre-domaine.com/api', // À mettre à jour
+  apiUrl: 'https://phd-api-production.up.railway.app/api', // À mettre à jour
   offline: {
     maxStorageAge: 30 * 24 * 60 * 60 * 1000,
     cleanupAfterDays: 7,
