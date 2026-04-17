@@ -40,6 +40,9 @@
         </div>
       </div>
       <div class="topbar-right">
+        <button class="topbar-icon-btn" (click)="refresh()" aria-label="Actualiser" matTooltip="Actualiser" matTooltipPosition="below">
+          <mat-icon>refresh</mat-icon>
+        </button>
         <div class="topbar-divider" aria-hidden="true"></div>
         <div class="topbar-user-wrapper">
           <button class="topbar-user" (click)="toggleProfileDropdown()" aria-label="Ouvrir le menu profil" [attr.aria-expanded]="profileDropdownOpen()">
