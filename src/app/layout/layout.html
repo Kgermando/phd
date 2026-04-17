@@ -4,18 +4,22 @@
       <img src="images/logo.png" alt="Logo de PHD" class="logo-image" />
     </div>
     <nav aria-label="Navigation principale">
-      <a routerLink="/dashboard" routerLinkActive="active" (click)="closeMenu()">
-        <mat-icon aria-hidden="true">dashboard</mat-icon> Tableau de bord
-      </a>
+      @if (!isProducteur()) {
+        <a routerLink="/dashboard" routerLinkActive="active" (click)="closeMenu()">
+          <mat-icon aria-hidden="true">dashboard</mat-icon> Tableau de bord
+        </a>
+      }
       <a routerLink="/producteurs" routerLinkActive="active" (click)="closeMenu()">
         <mat-icon aria-hidden="true">group</mat-icon> Producteurs
       </a>
-      <a routerLink="/carte" routerLinkActive="active" (click)="closeMenu()">
-        <mat-icon aria-hidden="true">map</mat-icon> Carte
-      </a>
-      <a routerLink="/utilisateurs" routerLinkActive="active" (click)="closeMenu()">
-        <mat-icon aria-hidden="true">people</mat-icon> Utilisateurs
-      </a>
+      @if (!isProducteur()) {
+        <a routerLink="/carte" routerLinkActive="active" (click)="closeMenu()">
+          <mat-icon aria-hidden="true">map</mat-icon> Carte
+        </a>
+        <a routerLink="/utilisateurs" routerLinkActive="active" (click)="closeMenu()">
+          <mat-icon aria-hidden="true">people</mat-icon> Utilisateurs
+        </a>
+      }
     </nav>
     <div class="sidebar-footer">
       <div class="user-info">Connecté en tant que</div>

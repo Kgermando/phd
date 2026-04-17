@@ -4,9 +4,11 @@
     <h2>Utilisateurs</h2>
     <p class="subtitle">Gestion des utilisateurs du système</p>
   </div>
-  <a routerLink="/utilisateurs/nouveau" class="btn btn-primary">
-    <mat-icon aria-hidden="true">add</mat-icon> Nouvel utilisateur
-  </a>
+  @if (auth.canCreate()) {
+    <a routerLink="/utilisateurs/nouveau" class="btn btn-primary">
+      <mat-icon aria-hidden="true">add</mat-icon> Nouvel utilisateur
+    </a>
+  }
 </div>
 
 <!-- Filters -->
@@ -86,13 +88,15 @@
                 >
                   <mat-icon>visibility</mat-icon>
                 </a>
-                <a 
-                  [routerLink]="['/utilisateurs', user.uuid, 'modifier']"
-                  class="btn-icon"
-                  title="Modifier"
-                >
-                  <mat-icon>edit</mat-icon>
-                </a>
+                @if (auth.canEdit()) {
+                  <a 
+                    [routerLink]="['/utilisateurs', user.uuid, 'modifier']"
+                    class="btn-icon"
+                    title="Modifier"
+                  >
+                    <mat-icon>edit</mat-icon>
+                  </a>
+                }
               </div>
             </td>
           </tr>

@@ -4,9 +4,11 @@
     <h2>Producteurs recensés</h2>
     <p class="subtitle">Province de la Mongala · Territoire de Bumba</p>
   </div>
-  <a routerLink="/producteurs/nouveau" class="btn btn-primary">
-    <mat-icon aria-hidden="true">add</mat-icon> Nouveau recensement
-  </a>
+  @if (auth.canCreate()) {
+    <a routerLink="/producteurs/nouveau" class="btn btn-primary">
+      <mat-icon aria-hidden="true">add</mat-icon> Nouveau recensement
+    </a>
+  }
 </div>
 
 <!-- Summary chips -->
@@ -196,20 +198,24 @@
                 >
                   <mat-icon>visibility</mat-icon>
                 </a>
-                <a
-                  [routerLink]="['/producteurs', p.uuid, 'modifier']"
-                  class="action-btn action-edit"
-                >
-                  <mat-icon>edit</mat-icon>
-                </a>
-                <button
-                  class="action-btn action-delete"
-                  (click)="delete(p)"
-                  [attr.aria-label]="'Supprimer ' + p.nom"
-                  title="Supprimer"
-                >
-                  <mat-icon>delete_outline</mat-icon>
-                </button>
+                @if (auth.canEdit()) {
+                  <a
+                    [routerLink]="['/producteurs', p.uuid, 'modifier']"
+                    class="action-btn action-edit"
+                  >
+                    <mat-icon>edit</mat-icon>
+                  </a>
+                }
+                @if (auth.canDelete()) {
+                  <button
+                    class="action-btn action-delete"
+                    (click)="delete(p)"
+                    [attr.aria-label]="'Supprimer ' + p.nom"
+                    title="Supprimer"
+                  >
+                    <mat-icon>delete_outline</mat-icon>
+                  </button>
+                }
               </div>
             </td>
           </tr>

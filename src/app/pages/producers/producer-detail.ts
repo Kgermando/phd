@@ -4,6 +4,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { MatIcon } from '@angular/material/icon';
 import { Producer, Score } from '../../models/models';
 import { ProducersService } from '../../services/producers.service';
+import { AuthService } from '../../auth/services/auth.service';
 
 @Component({
   selector: 'app-producer-detail',
@@ -17,6 +18,7 @@ export class ProducerDetailComponent implements OnInit {
   private router = inject(Router);
   private fb = inject(FormBuilder);
   private producersService = inject(ProducersService);
+  protected auth = inject(AuthService);
 
   producer = signal<Producer | null>(null);
   scores = signal<Score[]>([]);

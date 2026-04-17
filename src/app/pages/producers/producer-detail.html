@@ -16,12 +16,16 @@
         </div>
       </div>
       <div class="header-actions">
-        <a [routerLink]="['/producteurs', producer()!.uuid, 'modifier']" class="btn btn-ghost">
-          <mat-icon aria-hidden="true">edit</mat-icon> Modifier
-        </a>
-        <button class="btn btn-danger" (click)="delete()">
-          <mat-icon aria-hidden="true">delete</mat-icon> Supprimer
-        </button>
+        @if (auth.canEdit()) {
+          <a [routerLink]="['/producteurs', producer()!.uuid, 'modifier']" class="btn btn-ghost">
+            <mat-icon aria-hidden="true">edit</mat-icon> Modifier
+          </a>
+        }
+        @if (auth.canDelete()) {
+          <button class="btn btn-danger" (click)="delete()">
+            <mat-icon aria-hidden="true">delete</mat-icon> Supprimer
+          </button>
+        }
       </div>
     </div>
 
@@ -50,9 +54,11 @@
     <div class="score-card">
       <div class="score-card-header">
         <span class="info-card-title"><mat-icon aria-hidden="true">analytics</mat-icon> Score de selection</span>
-        <button class="btn btn-primary btn-sm" (click)="openNewScore()" aria-label="Ajouter un score">
-          <mat-icon aria-hidden="true">add</mat-icon> Nouveau score
-        </button>
+        @if (auth.canCreate()) {
+          <button class="btn btn-primary btn-sm" (click)="openNewScore()" aria-label="Ajouter un score">
+            <mat-icon aria-hidden="true">add</mat-icon> Nouveau score
+          </button>
+        }
       </div>
 
       @if (latestScore()) {
@@ -156,12 +162,16 @@
                   [class.ineligible-badge]="!s.recommande"
                 >{{ s.recommande ? 'Eligible' : 'Non eligible' }}</span>
                 <div class="score-history-actions">
-                  <button class="icon-btn" (click)="openEditScore(s)" aria-label="Modifier ce score">
-                    <mat-icon aria-hidden="true">edit</mat-icon>
-                  </button>
-                  <button class="icon-btn icon-btn-danger" (click)="deleteScore(s)" aria-label="Supprimer ce score">
-                    <mat-icon aria-hidden="true">delete</mat-icon>
-                  </button>
+                  @if (auth.canEdit()) {
+                    <button class="icon-btn" (click)="openEditScore(s)" aria-label="Modifier ce score">
+                      <mat-icon aria-hidden="true">edit</mat-icon>
+                    </button>
+                  }
+                  @if (auth.canDelete()) {
+                    <button class="icon-btn icon-btn-danger" (click)="deleteScore(s)" aria-label="Supprimer ce score">
+                      <mat-icon aria-hidden="true">delete</mat-icon>
+                    </button>
+                  }
                 </div>
               </li>
             }

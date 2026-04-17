@@ -5,6 +5,7 @@ import { MatIcon } from '@angular/material/icon';
 import { UsersService } from '../../services/users.service';
 import { User, UserResponse } from '../../models/models';
 import { CommonModule } from '@angular/common';
+import { AuthService } from '../../auth/services/auth.service';
 
 @Component({
   selector: 'app-user-form',
@@ -18,6 +19,7 @@ export class UserFormComponent implements OnInit {
   private router = inject(Router);
   private route = inject(ActivatedRoute);
   private usersService = inject(UsersService);
+  protected auth = inject(AuthService);
 
   readonly roles = ['Directeur', 'Superviseur', 'Producteur', 'Admin'];
   isEdit = signal(false);

@@ -1,9 +1,20 @@
 import { Routes } from '@angular/router';
+import { inject } from '@angular/core';
+import { Router } from '@angular/router';
 import { authGuard } from './guards/auth.guard';
+import { nonProducteurGuard } from './guards/role.guard';
 import { AUTH_ROUTES } from './auth';
+import { AuthService } from './auth/services/auth.service';
+
+const rootGuard = () => {
+  const auth = inject(AuthService);
+  const router = inject(Router);
+  const target = auth.currentUser()?.role === 'Producteur' ? '/producteurs' : '/dashboard';
+  return router.createUrlTree([target]);
+};
 
 export const routes: Routes = [
-  { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
+  { path: '', canActivate: [rootGuard], children: [] },
   {
     path: 'auth',
     children: AUTH_ROUTES,
@@ -15,6 +26,7 @@ export const routes: Routes = [
     children: [
       {
         path: 'dashboard',
+        canActivate: [nonProducteurGuard],
         loadComponent: () => import('./pages/dashboard/dashboard').then((m) => m.DashboardComponent),
       },
       {
@@ -35,6 +47,7 @@ export const routes: Routes = [
       },
       {
         path: 'carte',
+        canActivate: [nonProducteurGuard],
         loadComponent: () => import('./pages/map/map').then((m) => m.MapComponent),
       },
       {
@@ -43,18 +56,22 @@ export const routes: Routes = [
       },
       {
         path: 'utilisateurs',
+        canActivate: [nonProducteurGuard],
         loadComponent: () => import('./pages/users/users-list').then((m) => m.UsersListComponent),
       },
       {
         path: 'utilisateurs/nouveau',
+        canActivate: [nonProducteurGuard],
         loadComponent: () => import('./pages/users/user-form').then((m) => m.UserFormComponent),
       },
       {
         path: 'utilisateurs/:id',
+        canActivate: [nonProducteurGuard],
         loadComponent: () => import('./pages/users/users-list').then((m) => m.UsersListComponent),
       },
       {
         path: 'utilisateurs/:id/modifier',
+        canActivate: [nonProducteurGuard],
         loadComponent: () => import('./pages/users/user-form').then((m) => m.UserFormComponent),
       },
     ],

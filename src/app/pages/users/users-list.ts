@@ -3,6 +3,7 @@ import { MatIcon } from '@angular/material/icon';
 import { RouterLink } from '@angular/router';
 import { UserResponse } from '../../models/models';
 import { UsersService } from '../../services/users.service';
+import { AuthService } from '../../auth/services/auth.service';
 
 @Component({
   selector: 'app-users-list',
@@ -13,6 +14,7 @@ import { UsersService } from '../../services/users.service';
 })
 export class UsersListComponent implements OnInit {
   private usersService = inject(UsersService);
+  protected auth = inject(AuthService);
 
   protected all = signal<UserResponse[]>([]);
   search = signal('');

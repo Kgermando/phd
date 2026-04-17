@@ -4,6 +4,7 @@ import { MatIcon } from '@angular/material/icon';
 import { RouterLink } from '@angular/router';
 import { Producer, ProducerStats } from '../../models/models';
 import { ProducersService } from '../../services/producers.service';
+import { AuthService } from '../../auth/services/auth.service';
 
 @Component({
   selector: 'app-producers-list',
@@ -14,6 +15,7 @@ import { ProducersService } from '../../services/producers.service';
 })
 export class ProducersListComponent implements OnInit {
   private producersService = inject(ProducersService);
+  protected auth = inject(AuthService);
 
   all = signal<Producer[]>([]);
   search = signal('');

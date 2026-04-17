@@ -26,6 +26,14 @@ export class AuthService {
     return user !== null && !this.isOnline();
   });
 
+  /** Permission helpers — read < write < all */
+  canCreate = computed(() => {
+    const p = this.currentUser()?.permission;
+    return p === 'write' || p === 'all';
+  });
+  canEdit = computed(() => this.currentUser()?.permission === 'all');
+  canDelete = computed(() => this.currentUser()?.permission === 'all');
+
   constructor() {
     // Écouter les changements de connectivité
     window.addEventListener('online', () => {

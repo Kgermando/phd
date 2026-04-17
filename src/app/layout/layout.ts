@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { MatIcon } from '@angular/material/icon';
 import { AuthService } from '../auth/services/auth.service';
@@ -14,6 +14,7 @@ export class LayoutComponent {
   protected auth = inject(AuthService);
   protected menuOpen = signal(false);
   protected profileDropdownOpen = signal(false);
+  protected isProducteur = computed(() => this.auth.currentUser()?.role === 'Producteur');
 
   toggleMenu(): void { this.menuOpen.update(v => !v); }
   closeMenu(): void { this.menuOpen.set(false); }

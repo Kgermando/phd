@@ -149,7 +149,7 @@
       <button
         type="submit"
         class="btn btn-primary"
-        [disabled]="!form.valid || saving()"
+        [disabled]="!form.valid || saving() || (isEdit() ? !auth.canEdit() : !auth.canCreate())"
       >
         @if (saving()) {
           <span class="spinner-small"></span>
