@@ -1,22 +1,23 @@
-import { APP_INITIALIZER, ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
+import { ApplicationConfig, provideAppInitializer, provideBrowserGlobalErrorListeners, inject } from '@angular/core';
 import { provideRouter, withHashLocation } from '@angular/router';
+import { provideHttpClient, withInterceptors, withInterceptorsFromDi } from '@angular/common/http';
+import { provideServiceWorker } from '@angular/service-worker';
+import { isDevMode } from '@angular/core';
 
 import { routes } from './app.routes';
-import { AuthService } from './services/auth.service';
-import { seedDatabase } from './utils/seed';
+import { AuthService } from './auth/services/auth.service';
+import { authInterceptor } from './auth/interceptors/auth.interceptor';
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
     provideRouter(routes, withHashLocation()),
-    {
-      provide: APP_INITIALIZER,
-      useFactory: (auth: AuthService) => async () => {
-        await seedDatabase();
-        await auth.restoreSession();
-      },
-      deps: [AuthService],
-      multi: true,
-    },
+    provideHttpClient(withInterceptors([authInterceptor]), withInterceptorsFromDi()),
+    provideAppInitializer(() => inject(AuthService).restoreSession()),
+    provideServiceWorker('ngsw-worker.js', {
+      enabled: !isDevMode(),
+      registrationStrategy: 'registerWhenStable:30000',
+    }),
   ],
 };
+

@@ -1,12 +1,10 @@
-﻿import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { FormArray, FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { MatIcon } from '@angular/material/icon';
-import { AuthService } from '../../services/auth.service';
-import { db } from '../../db/database';
-
-const ZONES = ['Yalisenza', 'Monzamboli', 'Kwanza', 'Yandongi-Yamandika', 'Manga', 'Bilia', 'YALGBA'];
+import { ProducersService } from '../../services/producers.service';
+import { Producer } from '../../models/models';
 
 @Component({
   selector: 'app-producer-form',
@@ -19,55 +17,65 @@ export class ProducerFormComponent implements OnInit {
   private fb = inject(FormBuilder);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
-  private auth = inject(AuthService);
+  private producersService = inject(ProducersService);
 
-  readonly zones = ZONES;
+  readonly zones = [
+    'Bilia',
+    'Monzamboli',
+    'Kwanza',
+    'Manga',
+    'Yandongi-Yamandika',
+    'Yalisenza',
+    'Yalgba',
+  ];
+
   isEdit = signal(false);
   saving = signal(false);
   saved = signal(false);
+  savedOffline = signal(false);
   gpsLoading = signal(false);
   gpsError = signal<string | null>(null);
   gpsSuccess = signal(false);
-  private editId: number | null = null;
+  private editUUID: string | null = null;
 
   form: FormGroup = this.fb.group({
     nom: ['', Validators.required],
     sexe: ['homme'],
-    dateNaissance: [''],
+    date_naissance: [''],
     telephone: [''],
     village: ['', Validators.required],
-    groupement: [''],
     zone: ['', Validators.required],
-    statutFoncier: ['proprietaire'],
-    anneesExperience: [0],
-    membreCooperative: [false],
-    nomCooperative: [''],
+    groupement: [''],
+    statut_foncier: ['proprietaire'],
+    annees_experience: [0],
+    membre_cooperative: [false],
+    nom_cooperative: [''],
     champs: this.fb.array([this.buildChamp()]),
-    rotationCultures: [false],
-    utilisationCompost: [false],
-    signesDegradation: [false],
-    sourceEau: ['pluie'],
-    economieEau: [false],
-    parcelleInondable: [false],
-    utilisationPesticides: [false],
-    formationPesticides: [false],
-    presenceArbres: [false],
-    activiteDeforestation: [false],
-    baiseFaune: [false],
-    perteSec: [false],
-    perteInondation: [false],
-    perteVents: [false],
-    strategiesAdaptation: [''],
-    varietesCultivees: [''],
-    rendementMoyen: [0],
-    campagnesParAn: [1],
-    manqueEau: [false],
-    intrantsCouteux: [false],
-    accesCred: [false],
-    degradationSols: [false],
-    changementsClimatiques: [false],
-    lieuVente: [''],
-    besoinsPrioritaires: [''],
+    rotation_cultures: [false],
+    utilisation_compost: [false],
+    signes_degradation: [false],
+    source_eau: ['pluie'],
+    economie_eau: [false],
+    parcelle_inondable: [false],
+    utilisation_pesticides: [false],
+    formation_pesticides: [false],
+    presence_arbres: [false],
+    activite_deforestation: [false],
+    baise_faune: [false],
+    perte_sec: [false],
+    perte_inondation: [false],
+    perte_vents: [false],
+    strategies_adaptation: [''],
+    varietes_cultivees: [''],
+    rendement_moyen: [0],
+    campagnes_par_an: [1],
+    manque_eau: [false],
+    intrants_couteux: [false],
+    acces_credit: [false],
+    degradation_sols: [false],
+    changements_climatiques: [false],
+    lieu_vente: [''],
+    besoins_prioritaires: [''],
     latitude: [null],
     longitude: [null],
   });
@@ -79,9 +87,9 @@ export class ProducerFormComponent implements OnInit {
     return this.fb.group({
       localisation: [''],
       superficie: [1],
-      typeRiziculture: ['pluviale'],
+      type_riziculture: ['pluviale'],
       irrigation: [false],
-      modeAcces: ['voiture'],
+      mode_acces: ['voiture'],
     });
   }
 
@@ -128,16 +136,14 @@ export class ProducerFormComponent implements OnInit {
     const id = this.route.snapshot.paramMap.get('id');
     if (id && id !== 'nouveau') {
       this.isEdit.set(true);
-      this.editId = Number(id);
-      const p = await db.producers.get(this.editId);
+      this.editUUID = id;
+      const p = await this.producersService.getProducerByUUID(id);
       if (p) {
-        // Rebuild champs formArray
         while (this.champsArray.length > 0) this.champsArray.removeAt(0);
-        for (const _ of p.champs) this.champsArray.push(this.buildChamp());
+        for (const _ of (p.champs ?? [])) this.champsArray.push(this.buildChamp());
         this.form.patchValue(p);
       }
     } else {
-      // Auto-detect GPS for new entries
       this.locateMe();
     }
   }
@@ -145,19 +151,26 @@ export class ProducerFormComponent implements OnInit {
   async onSubmit(): Promise<void> {
     if (this.form.invalid) { this.form.markAllAsTouched(); return; }
     this.saving.set(true);
-    const val = this.form.getRawValue();
-    const data = {
-      ...val,
-      agentRecenseurId: this.auth.currentUser()?.id ?? 1,
-      dateRecensement: new Date().toISOString().split('T')[0],
-    };
-    if (this.isEdit() && this.editId) {
-      await db.producers.update(this.editId, data);
-    } else {
-      await db.producers.add(data);
+    try {
+      const val = this.form.getRawValue() as Partial<Producer>;
+      if (this.isEdit() && this.editUUID) {
+        await this.producersService.updateProducer(this.editUUID, val);
+        this.saving.set(false);
+        this.saved.set(true);
+        setTimeout(() => this.router.navigate(['/producteurs']), 1200);
+      } else {
+        const result = await this.producersService.createProducer(val);
+        this.saving.set(false);
+        if (result._pending) {
+          this.savedOffline.set(true);
+          setTimeout(() => this.router.navigate(['/producteurs']), 2000);
+        } else {
+          this.saved.set(true);
+          setTimeout(() => this.router.navigate(['/producteurs']), 1200);
+        }
+      }
+    } catch (err) {
+      this.saving.set(false);
     }
-    this.saving.set(false);
-    this.saved.set(true);
-    setTimeout(() => this.router.navigate(['/producteurs']), 1200);
   }
 }

@@ -1,7 +1,24 @@
 <div class="page-header">
-  <h2>Tableau de bord</h2>
-  <p>Vue d'ensemble du recensement des riziculteurs – Province de la Mongala, Territoire de Bumba</p>
+  <div>
+    <h2>Tableau de bord</h2>
+    <p class="subtitle">Vue d'ensemble du recensement – Province de la Mongala, Territoire de Bumba</p>
+  </div>
+  <div class="page-actions">
+    <button class="btn btn-outline btn-sm" type="button" (click)="exportExcel()" aria-label="Exporter en Excel">
+      <mat-icon aria-hidden="true">table_view</mat-icon> Excel
+    </button>
+    <button class="btn btn-outline btn-sm" type="button" (click)="exportPdf()" aria-label="Exporter en PDF">
+      <mat-icon aria-hidden="true">picture_as_pdf</mat-icon> PDF
+    </button>
+  </div>
 </div>
+
+@if (error()) {
+  <div class="dash-error" role="alert">
+    <mat-icon aria-hidden="true">error_outline</mat-icon>
+    <span>{{ error() }}</span>
+  </div>
+}
 
 @if (loaded()) {
   <!-- KPI Cards -->
@@ -19,8 +36,21 @@
       <div class="stat-label"><mat-icon aria-hidden="true">cancel</mat-icon> Non éligibles</div>
     </div>
     <div class="stat-card accent">
-      <div class="stat-value">{{ avgScore() }}</div>
+      <div class="stat-value">{{ avgScore() | number:'1.0-1' }}</div>
       <div class="stat-label"><mat-icon aria-hidden="true">star</mat-icon> Score moyen / 100</div>
+    </div>
+    <div class="stat-card rate"
+      role="progressbar"
+      [attr.aria-valuenow]="eligibilityRate()"
+      aria-valuemin="0"
+      aria-valuemax="100"
+      [attr.aria-label]="'Taux d\'éligibilité : ' + eligibilityRate() + '%'"
+    >
+      <div class="stat-value">{{ eligibilityRate() }}%</div>
+      <div class="stat-label"><mat-icon aria-hidden="true">percent</mat-icon> Taux d'éligibilité</div>
+      <div class="eligibility-bar" aria-hidden="true">
+        <div class="eligibility-fill" [style.width.%]="eligibilityRate()"></div>
+      </div>
     </div>
     <div class="stat-card">
       <div class="stat-value">{{ zones().length }}</div>
@@ -218,6 +248,36 @@
     </div>
   </div>
 
+  <!-- ── Zone pie : Répartition géographique ── -->
+  <div class="card mb-3">
+    <div class="section-title"><mat-icon aria-hidden="true">public</mat-icon> Répartition géographique des producteurs</div>
+    @if (zonePie().length > 0) {
+      <div class="zone-pie-wrap" role="img" aria-label="Répartition des producteurs par secteur géographique">
+        <svg class="zone-pie-svg" viewBox="0 0 120 120" aria-hidden="true" focusable="false">
+          @for (s of zonePie(); track s.label) {
+            @if (s.d) {
+              <path [attr.d]="s.d" [attr.fill]="s.color">
+                <title>{{ s.label }} : {{ s.count }} ({{ s.pct }}%)</title>
+              </path>
+            }
+          }
+        </svg>
+        <div class="zone-pie-legend">
+          @for (s of zonePie(); track s.label) {
+            <div class="legend-item">
+              <span class="legend-dot" [style.background]="s.color"></span>
+              <span class="legend-zone-name">{{ s.label }}</span>
+              <strong>{{ s.count }}</strong>
+              <span class="legend-pct">({{ s.pct }}%)</span>
+            </div>
+          }
+        </div>
+      </div>
+    } @else {
+      <p class="text-muted">Pas encore de données par zone.</p>
+    }
+  </div>
+
   <!-- ── Ligne 4 : Tranche d'âge (barres) + Secteurs géographiques ── -->
   <div class="grid-2">
     <!-- Barres : Tranche d'âge -->
@@ -260,6 +320,62 @@
     </div>
   </div>
 
+  <!-- ── Agent performance table ── -->
+  <div class="card mb-3">
+    <div class="section-title">
+      <mat-icon aria-hidden="true">leaderboard</mat-icon> Performance des agents de recensement
+    </div>
+    @if (userPerformance().length > 0) {
+      <div class="agent-table-wrap">
+        <table class="agent-table" aria-label="Classement des agents par performance">
+          <thead>
+            <tr>
+              <th scope="col">#</th>
+              <th scope="col">Agent</th>
+              <th scope="col" class="text-right">Producteurs</th>
+              <th scope="col" class="text-right">Éligibles</th>
+              <th scope="col" class="text-right">Non élig.</th>
+              <th scope="col" class="text-right">Score moy.</th>
+              <th scope="col">Taux d'éligibilité</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (u of userPerformance(); track u.user_uuid; let i = $index) {
+              <tr>
+                <td>
+                  <span class="rank"
+                    [class.rank-gold]="i === 0"
+                    [class.rank-silver]="i === 1"
+                    [class.rank-bronze]="i === 2"
+                  >{{ i + 1 }}</span>
+                </td>
+                <td class="agent-name">{{ u.user_fullname }}</td>
+                <td class="text-right">{{ u.total_producers }}</td>
+                <td class="text-right text-green">{{ u.eligible_producers }}</td>
+                <td class="text-right text-red">{{ u.non_eligible_producers }}</td>
+                <td class="text-right">{{ u.avg_score | number:'1.1-1' }}</td>
+                <td>
+                  <div class="rate-cell">
+                    <div class="rate-bar-bg">
+                      <div class="rate-bar-fill"
+                        [style.width.%]="u.completion_rate"
+                        [class.rate-green]="u.completion_rate >= 60"
+                        [class.rate-red]="u.completion_rate < 60"
+                      ></div>
+                    </div>
+                    <span class="rate-label">{{ u.completion_rate | number:'1.0-0' }}%</span>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    } @else {
+      <p class="text-muted">Aucune donnée de performance disponible.</p>
+    }
+  </div>
+
   <!-- Recent producers -->
   <div class="card mb-3">
     <div class="section-title recent-header">
@@ -267,7 +383,7 @@
       <a routerLink="/producteurs" class="btn btn-ghost btn-sm">Voir tous</a>
     </div>
     <ul class="recent-list" aria-label="Derniers producteurs">
-      @for (p of recent(); track p.id) {
+      @for (p of recent(); track p.uuid) {
         <li class="recent-item">
           <div>
             <div class="recent-name">{{ p.nom }}</div>
@@ -275,8 +391,8 @@
           </div>
           <span
             class="badge"
-            [class.badge-green]="(p.score ?? 0) >= 60"
-            [class.badge-red]="(p.score ?? 0) < 60"
+            [class.badge-green]="p.score >= 60"
+            [class.badge-red]="p.score < 60"
           >
             {{ p.score }}/100
           </span>

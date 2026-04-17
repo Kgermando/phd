@@ -1,0 +1,137 @@
+.profile-container {
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+.profile-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.profile-header {
+  background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
+  padding: 40px 24px;
+  color: white;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+
+  .avatar-large {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    color: #fff;
+    font-size: 32px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+  }
+
+  .profile-info {
+    flex: 1;
+
+    .profile-name {
+      font-size: 24px;
+      font-weight: 800;
+      margin: 0 0 4px 0;
+      line-height: 1.2;
+    }
+
+    .profile-role {
+      font-size: 14px;
+      opacity: 0.9;
+      margin: 0;
+    }
+  }
+}
+
+.profile-content {
+  padding: 32px 24px;
+}
+
+.info-section {
+  margin-bottom: 32px;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+
+  h2 {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text);
+    margin: 0 0 16px 0;
+    padding-bottom: 12px;
+    border-bottom: 2px solid var(--border);
+  }
+}
+
+.info-item {
+  margin-bottom: 16px;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+
+  label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+  }
+
+  .info-value {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    background: rgba(0, 0, 0, 0.02);
+    border-radius: 6px;
+    color: var(--text);
+    font-size: 14px;
+    font-weight: 500;
+
+    mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+      color: var(--text-muted);
+
+      &.status-active {
+        color: #4caf50;
+      }
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .profile-header {
+    flex-direction: column;
+    text-align: center;
+    padding: 32px 20px;
+
+    .profile-info {
+      .profile-name {
+        font-size: 20px;
+      }
+    }
+  }
+
+  .profile-content {
+    padding: 24px 20px;
+  }
+
+  .info-section h2 {
+    font-size: 14px;
+  }
+}

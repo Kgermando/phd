@@ -13,7 +13,7 @@
 <div class="summary-bar">
   <div class="summary-chip">
     <mat-icon aria-hidden="true">group</mat-icon>
-    <span class="chip-value">{{ all().length }}</span>
+    <span class="chip-value">{{ totalCount() }}</span>
     <span class="chip-label">Total</span>
   </div>
   <div class="summary-chip chip-green">
@@ -23,7 +23,7 @@
   </div>
   <div class="summary-chip chip-red">
     <mat-icon aria-hidden="true">cancel</mat-icon>
-    <span class="chip-value">{{ all().length - eligibleCount() }}</span>
+    <span class="chip-value">{{ nonEligibleCount() }}</span>
     <span class="chip-label">Non éligibles</span>
   </div>
   <div class="summary-chip chip-accent">
@@ -31,6 +31,13 @@
     <span class="chip-value">{{ femmesCount() }}</span>
     <span class="chip-label">Femmes</span>
   </div>
+  @if (pendingCount() > 0) {
+    <div class="summary-chip chip-pending" title="Données enregistrées hors-ligne, en attente de synchronisation">
+      <mat-icon aria-hidden="true">cloud_off</mat-icon>
+      <span class="chip-value">{{ pendingCount() }}</span>
+      <span class="chip-label">Hors-ligne</span>
+    </div>
+  }
 </div>
 
 <!-- Filters -->
@@ -40,26 +47,35 @@
     <input
       class="search-input"
       type="search"
-      placeholder="Rechercher par nom ou village..."
+      placeholder="Rechercher par nom, village ou téléphone..."
       [ngModel]="search()" (ngModelChange)="search.set($event)"
+      (keyup.enter)="onSearch()"
       aria-label="Rechercher un producteur"
     />
   </div>
   <div class="filter-row">
     <div class="filter-group">
-      <label class="filter-label" for="f-zone">Zone</label>
-      <select id="f-zone" class="form-control form-control-sm" [ngModel]="zoneFilter()" (ngModelChange)="zoneFilter.set($event)">
-        @for (z of zones; track z) {
-          <option [value]="z">{{ z }}</option>
-        }
-      </select>
+      <label class="filter-label" for="f-village">Village</label>
+      <input
+        id="f-village"
+        type="text"
+        class="form-control form-control-sm"
+        placeholder="Filtrer par village"
+        [ngModel]="villageFilter()" (ngModelChange)="villageFilter.set($event)"
+        (keyup.enter)="onSearch()"
+      />
     </div>
     <div class="filter-group">
-      <label class="filter-label" for="f-elig">Éligibilité</label>
-      <select id="f-elig" class="form-control form-control-sm" [ngModel]="eligFilter()" (ngModelChange)="eligFilter.set($event)">
-        <option value="tous">Tous</option>
-        <option value="eligible">Éligibles (≥ 60)</option>
-        <option value="non">Non éligibles</option>
+      <label class="filter-label" for="f-zone">Zone</label>
+      <select id="f-zone" class="form-control form-control-sm" [ngModel]="zoneFilter()" (ngModelChange)="zoneFilter.set($event)">
+        <option value="">Toutes les zones</option>
+        <option value="Bilia">Bilia</option>
+        <option value="Monzamboli">Monzamboli</option>
+        <option value="Kwanza">Kwanza</option>
+        <option value="Manga">Manga</option>
+        <option value="Yandongi-Yamandika">Yandongi-Yamandika</option>
+        <option value="Yalisenza">Yalisenza</option>
+        <option value="Yalgba">Yalgba</option>
       </select>
     </div>
     <div class="filter-group">
@@ -73,14 +89,17 @@
     <button class="btn-reset" (click)="resetFilters()" title="Réinitialiser les filtres">
       <mat-icon>filter_alt_off</mat-icon>
     </button>
+    <button class="btn btn-ghost btn-sm" (click)="onSearch()">
+      <mat-icon>search</mat-icon> Rechercher
+    </button>
   </div>
 </div>
 
 <!-- Result count -->
 <div class="result-bar" aria-live="polite">
   <span class="result-count">{{ filtered().length }} producteur{{ filtered().length > 1 ? 's' : '' }} affiché{{ filtered().length > 1 ? 's' : '' }}</span>
-  @if (filtered().length < all().length) {
-    <span class="result-filter-msg">sur {{ all().length }} au total</span>
+  @if (totalRecords() > 0) {
+    <span class="result-filter-msg">sur {{ totalRecords() }} au total</span>
   }
 </div>
 
@@ -99,8 +118,12 @@
         </tr>
       </thead>
       <tbody>
-        @for (p of filtered(); track p.id) {
-          <tr [class.row-eligible]="p.score >= 60" [class.row-non]="p.score < 60">
+        @for (p of filtered(); track p.uuid) {
+          <tr
+            [class.row-eligible]="isEligible(p) && !p._pending"
+            [class.row-non]="!isEligible(p) && !p._pending"
+            [class.row-pending]="p._pending"
+          >
 
             <!-- Producteur -->
             <td class="td-producer">
@@ -112,16 +135,18 @@
                   <div class="producer-name">{{ p.nom }}</div>
                   <div class="producer-meta">
                     <mat-icon aria-hidden="true">{{ p.sexe === 'femme' ? 'woman' : 'man' }}</mat-icon>
-                    {{ p.sexe }} · {{ p.anneesExperience }} ans d'exp.
+                    {{ p.sexe }} · {{ p.annees_experience }} ans d'exp.
                   </div>
                 </div>
               </div>
             </td>
 
-            <!-- Zone -->
+    <!-- Zone -->
             <td class="td-zone">
               <div class="village">{{ p.village }}</div>
-              <div class="zone-tag">{{ p.zone }}</div>
+              @if (p.zone) {
+                <div class="zone-tag">{{ p.zone }}</div>
+              }
             </td>
 
             <!-- Superficie -->
@@ -132,14 +157,14 @@
 
             <!-- Score -->
             <td class="td-score">
-              <div class="score-number" [class.score-good]="p.score >= 60" [class.score-bad]="p.score < 60">
-                {{ p.score }}
+              <div class="score-number" [class.score-good]="getScore(p) >= 60" [class.score-bad]="getScore(p) < 60">
+                {{ getScore(p) }}
               </div>
               <div class="score-bar-mini">
                 <div
                   class="score-bar-fill"
-                  [style.width.%]="p.score"
-                  [style.background]="p.score >= 60 ? '#43a047' : '#ef5350'"
+                  [style.width.%]="getScore(p)"
+                  [style.background]="getScore(p) >= 60 ? '#43a047' : '#ef5350'"
                 ></div>
               </div>
               <div class="score-label">/100</div>
@@ -147,7 +172,11 @@
 
             <!-- Statut -->
             <td class="td-status">
-              @if (p.score >= 60) {
+              @if (p._pending) {
+                <span class="status-badge status-pending">
+                  <mat-icon aria-hidden="true">cloud_off</mat-icon> Hors-ligne
+                </span>
+              } @else if (isEligible(p)) {
                 <span class="status-badge status-ok">
                   <mat-icon aria-hidden="true">check_circle</mat-icon> Éligible
                 </span>
@@ -162,18 +191,14 @@
             <td class="td-actions">
               <div class="actions">
                 <a
-                  [routerLink]="['/producteurs', p.id]"
+                  [routerLink]="['/producteurs', p.uuid]"
                   class="action-btn action-view"
-                  [attr.aria-label]="'Voir ' + p.nom"
-                  title="Voir le détail"
                 >
                   <mat-icon>visibility</mat-icon>
                 </a>
                 <a
-                  [routerLink]="['/producteurs', p.id, 'modifier']"
+                  [routerLink]="['/producteurs', p.uuid, 'modifier']"
                   class="action-btn action-edit"
-                  [attr.aria-label]="'Modifier ' + p.nom"
-                  title="Modifier"
                 >
                   <mat-icon>edit</mat-icon>
                 </a>
@@ -200,36 +225,56 @@
   }
 </div>
 
+<!-- Pagination -->
+<div class="pagination-controls">
+  <div class="pagination-info">Page {{ currentPage() }} / {{ totalPages() }}</div>
+  <div class="pagination-buttons">
+    <button class="btn btn-secondary" (click)="previousPage()" [disabled]="currentPage() === 1 || loading()">
+      <mat-icon>chevron_left</mat-icon> Précédent
+    </button>
+    <button class="btn btn-secondary" (click)="nextPage()" [disabled]="currentPage() >= totalPages() || loading()">
+      Suivant <mat-icon>chevron_right</mat-icon>
+    </button>
+  </div>
+</div>
+
 <!-- Cards (mobile) -->
 @if (filtered().length > 0) {
   <ul class="mobile-cards" aria-label="Liste des producteurs">
-    @for (p of filtered(); track p.id) {
-      <li class="mobile-card">
-        <div class="mc-left" [class.mc-eligible]="p.score >= 60" [class.mc-non]="p.score < 60"></div>
+    @for (p of filtered(); track p.uuid) {
+      <li class="mobile-card" [class.mc-pending]="p._pending">
+        <div
+          class="mc-left"
+          [class.mc-eligible]="isEligible(p) && !p._pending"
+          [class.mc-non]="!isEligible(p) && !p._pending"
+          [class.mc-pending-bar]="p._pending"
+        ></div>
         <div class="mc-body">
           <div class="mc-top">
             <div class="avatar" [class.avatar-f]="p.sexe === 'femme'">{{ initials(p.nom) }}</div>
             <div class="mc-info">
               <div class="producer-name">{{ p.nom }}</div>
               <div class="mc-meta">
-                {{ p.village }} · <span class="zone-tag">{{ p.zone }}</span>
+                {{ p.village }}
               </div>
             </div>
-            <div class="mc-score" [class.score-good]="p.score >= 60" [class.score-bad]="p.score < 60">
-              {{ p.score }}<span class="mc-score-denom">/100</span>
+            <div class="mc-score" [class.score-good]="getScore(p) >= 60" [class.score-bad]="getScore(p) < 60">
+              {{ getScore(p) }}<span class="mc-score-denom">/100</span>
             </div>
           </div>
           <div class="mc-bottom">
-            @if (p.score >= 60) {
+            @if (p._pending) {
+              <span class="status-badge status-pending"><mat-icon aria-hidden="true">cloud_off</mat-icon> Hors-ligne</span>
+            } @else if (isEligible(p)) {
               <span class="status-badge status-ok"><mat-icon aria-hidden="true">check_circle</mat-icon> Éligible</span>
             } @else {
               <span class="status-badge status-ko"><mat-icon aria-hidden="true">cancel</mat-icon> Non éligible</span>
             }
             <div class="actions">
-              <a [routerLink]="['/producteurs', p.id]" class="action-btn action-view" [attr.aria-label]="'Voir ' + p.nom" title="Voir">
+              <a [routerLink]="['/producteurs', p.uuid]" class="action-btn action-view" [attr.aria-label]="'Voir ' + p.nom" title="Voir">
                 <mat-icon>visibility</mat-icon>
               </a>
-              <a [routerLink]="['/producteurs', p.id, 'modifier']" class="action-btn action-edit" [attr.aria-label]="'Modifier ' + p.nom" title="Modifier">
+              <a [routerLink]="['/producteurs', p.uuid, 'modifier']" class="action-btn action-edit" [attr.aria-label]="'Modifier ' + p.nom" title="Modifier">
                 <mat-icon>edit</mat-icon>
               </a>
               <button class="action-btn action-delete" (click)="delete(p)" [attr.aria-label]="'Supprimer ' + p.nom" title="Supprimer">

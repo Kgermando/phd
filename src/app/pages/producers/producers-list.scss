@@ -62,6 +62,14 @@
     mat-icon { color: #e65100; }
     .chip-value { color: #e65100; }
   }
+
+  &.chip-pending {
+    border-left-color: #ff8f00;
+    background: #fff8e1;
+    mat-icon { color: #ff8f00; }
+    .chip-value { color: #e65100; }
+    cursor: help;
+  }
 }
 
 .chip-value {
@@ -252,6 +260,18 @@ tbody tr {
       border-left: 3px solid #ef5350;
     }
   }
+
+  &.row-pending {
+    background: #fffde7;
+
+    td.td-producer {
+      border-left: 3px solid #ff8f00;
+    }
+
+    &:hover {
+      background: #fff8e1;
+    }
+  }
 }
 
 td {
@@ -398,6 +418,11 @@ td {
     background: #ffebee;
     color: #c62828;
   }
+
+  &.status-pending {
+    background: #fff8e1;
+    color: #e65100;
+  }
 }
 
 /* ── Action buttons ── */
@@ -485,8 +510,13 @@ td {
   width: 4px;
   flex-shrink: 0;
 
-  &.mc-eligible { background: #43a047; }
-  &.mc-non      { background: #ef5350; }
+  &.mc-eligible    { background: #43a047; }
+  &.mc-non         { background: #ef5350; }
+  &.mc-pending-bar { background: #ff8f00; }
+}
+
+.mc-pending {
+  background: #fffde7;
 }
 
 .mc-body {

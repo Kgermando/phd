@@ -163,6 +163,25 @@
   }
 }
 
+.map-error {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 20px;
+  margin-top: 12px;
+  background: #fdecea;
+  border: 1px solid #f5c6cb;
+  border-radius: 8px;
+  color: #c62828;
+  font-size: 14px;
+
+  mat-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+  }
+}
+
 @keyframes spin {
   from { transform: rotate(0deg); }
   to   { transform: rotate(360deg); }

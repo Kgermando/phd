@@ -18,6 +18,12 @@
   @if (saved()) {
     <div class="success-banner" role="status"><mat-icon aria-hidden="true">check_circle</mat-icon> Enregistrement réussi !</div>
   }
+  @if (savedOffline()) {
+    <div class="offline-banner" role="status">
+      <mat-icon aria-hidden="true">cloud_off</mat-icon>
+      Enregistré localement. Sera synchronisé automatiquement dès que la connexion est rétablie.
+    </div>
+  }
 
   <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
 
@@ -37,8 +43,8 @@
           <input id="telephone" class="form-control" formControlName="telephone" type="tel" />
         </div>
         <div class="form-group">
-          <label for="dateNaissance">Date de naissance</label>
-          <input id="dateNaissance" class="form-control" formControlName="dateNaissance" type="date" />
+          <label for="date_naissance">Date de naissance</label>
+          <input id="date_naissance" class="form-control" formControlName="date_naissance" type="date" />
         </div>
         <div class="form-group">
           <fieldset>
@@ -58,17 +64,20 @@
           <input id="village" class="form-control" formControlName="village" type="text" />
         </div>
         <div class="form-group">
-          <label for="groupement">Groupement</label>
-          <input id="groupement" class="form-control" formControlName="groupement" type="text" />
-        </div>
-        <div class="form-group">
-          <label for="zone">Zone *</label>
+          <label for="zone">Zone de rizerie *</label>
           <select id="zone" class="form-control" formControlName="zone">
-            <option value="">-- Choisir --</option>
+            <option value="" disabled>-- Choisir une zone --</option>
             @for (z of zones; track z) {
               <option [value]="z">{{ z }}</option>
             }
           </select>
+          @if (f['zone'].invalid && f['zone'].touched) {
+            <div class="error-text">Champ obligatoire</div>
+          }
+        </div>
+        <div class="form-group">
+          <label for="groupement">Groupement</label>
+          <input id="groupement" class="form-control" formControlName="groupement" type="text" />
         </div>
       </div>
     </div>
@@ -78,8 +87,8 @@
       <div class="section-head"><span class="section-num">2</span> Situation du producteur</div>
       <div class="grid-2">
         <div class="form-group">
-          <label for="statutFoncier">Statut foncier</label>
-          <select id="statutFoncier" class="form-control" formControlName="statutFoncier">
+          <label for="statut_foncier">Statut foncier</label>
+          <select id="statut_foncier" class="form-control" formControlName="statut_foncier">
             <option value="proprietaire">Propriétaire</option>
             <option value="exploitant">Exploitant</option>
             <option value="metayer">Métayer</option>
@@ -87,20 +96,20 @@
           </select>
         </div>
         <div class="form-group">
-          <label for="anneesExperience">Années d'expérience en riziculture</label>
-          <input id="anneesExperience" class="form-control" formControlName="anneesExperience" type="number" min="0" />
+          <label for="annees_experience">Années d'expérience en riziculture</label>
+          <input id="annees_experience" class="form-control" formControlName="annees_experience" type="number" min="0" />
         </div>
       </div>
       <div class="form-group">
         <label class="check-item">
-          <input type="checkbox" formControlName="membreCooperative" />
+          <input type="checkbox" formControlName="membre_cooperative" />
           Membre d'une coopérative / association
         </label>
       </div>
-      @if (form.get('membreCooperative')?.value) {
+      @if (form.get('membre_cooperative')?.value) {
         <div class="form-group">
-          <label for="nomCooperative">Nom de la coopérative</label>
-          <input id="nomCooperative" class="form-control" formControlName="nomCooperative" type="text" />
+          <label for="nom_cooperative">Nom de la coopérative</label>
+          <input id="nom_cooperative" class="form-control" formControlName="nom_cooperative" type="text" />
         </div>
       }
     </div>
@@ -126,7 +135,7 @@
               </div>
               <div class="form-group">
                 <label [for]="'type'+i">Type de riziculture</label>
-                <select [id]="'type'+i" class="form-control" formControlName="typeRiziculture">
+                <select [id]="'type'+i" class="form-control" formControlName="type_riziculture">
                   <option value="pluviale">Pluviale</option>
                   <option value="irriguee">Irriguée</option>
                   <option value="bas-fond">Bas-fond</option>
@@ -134,7 +143,7 @@
               </div>
               <div class="form-group">
                 <label [for]="'acc'+i">Mode d'accès</label>
-                <select [id]="'acc'+i" class="form-control" formControlName="modeAcces">
+                <select [id]="'acc'+i" class="form-control" formControlName="mode_acces">
                   <option value="voiture">Voiture</option>
                   <option value="velo">Vélo</option>
                   <option value="pied">À pied</option>
@@ -162,16 +171,16 @@
         <div>
           <p class="sub-title">Gestion des sols</p>
           <div class="checkbox-group">
-            <label class="check-item"><input type="checkbox" formControlName="rotationCultures" /> Rotation des cultures</label>
-            <label class="check-item"><input type="checkbox" formControlName="utilisationCompost" /> Utilisation de compost / fumure organique</label>
-            <label class="check-item"><input type="checkbox" formControlName="signesDegradation" /> Signes de dégradation des sols</label>
+            <label class="check-item"><input type="checkbox" formControlName="rotation_cultures" /> Rotation des cultures</label>
+            <label class="check-item"><input type="checkbox" formControlName="utilisation_compost" /> Utilisation de compost / fumure organique</label>
+            <label class="check-item"><input type="checkbox" formControlName="signes_degradation" /> Signes de dégradation des sols</label>
           </div>
         </div>
         <div>
           <p class="sub-title">Gestion de l'eau</p>
           <div class="form-group">
-            <label for="sourceEau">Source principale d'eau</label>
-            <select id="sourceEau" class="form-control" formControlName="sourceEau">
+            <label for="source_eau">Source principale d'eau</label>
+            <select id="source_eau" class="form-control" formControlName="source_eau">
               <option value="pluie">Pluie</option>
               <option value="fleuve">Fleuve</option>
               <option value="barrage">Barrage</option>
@@ -179,8 +188,8 @@
             </select>
           </div>
           <div class="checkbox-group">
-            <label class="check-item"><input type="checkbox" formControlName="economieEau" /> Techniques d'économie d'eau</label>
-            <label class="check-item"><input type="checkbox" formControlName="parcelleInondable" /> Parcelle exposée aux inondations</label>
+            <label class="check-item"><input type="checkbox" formControlName="economie_eau" /> Techniques d'économie d'eau</label>
+            <label class="check-item"><input type="checkbox" formControlName="parcelle_inondable" /> Parcelle exposée aux inondations</label>
           </div>
         </div>
       </div>
@@ -188,16 +197,16 @@
         <div>
           <p class="sub-title">Produits phytosanitaires</p>
           <div class="checkbox-group">
-            <label class="check-item"><input type="checkbox" formControlName="utilisationPesticides" /> Utilisation de pesticides</label>
-            <label class="check-item"><input type="checkbox" formControlName="formationPesticides" /> Formation à leur utilisation</label>
+            <label class="check-item"><input type="checkbox" formControlName="utilisation_pesticides" /> Utilisation de pesticides</label>
+            <label class="check-item"><input type="checkbox" formControlName="formation_pesticides" /> Formation à leur utilisation</label>
           </div>
         </div>
         <div>
           <p class="sub-title">Biodiversité et protection</p>
           <div class="checkbox-group">
-            <label class="check-item"><input type="checkbox" formControlName="presenceArbres" /> Présence d'arbres ou haies</label>
-            <label class="check-item"><input type="checkbox" formControlName="activiteDeforestation" /> Activité entraînant une déforestation</label>
-            <label class="check-item"><input type="checkbox" formControlName="baiseFaune" /> Baisse de la faune observée</label>
+            <label class="check-item"><input type="checkbox" formControlName="presence_arbres" /> Présence d'arbres ou haies</label>
+            <label class="check-item"><input type="checkbox" formControlName="activite_deforestation" /> Activité entraînant une déforestation</label>
+            <label class="check-item"><input type="checkbox" formControlName="baise_faune" /> Baisse de la faune observée</label>
           </div>
         </div>
       </div>
@@ -208,13 +217,13 @@
       <div class="section-head"><span class="section-num">5</span> Risques climatiques</div>
       <p class="sub-title">Pertes liées à :</p>
       <div class="checkbox-row">
-        <label class="check-item"><input type="checkbox" formControlName="perteSec" /> Sécheresse</label>
-        <label class="check-item"><input type="checkbox" formControlName="perteInondation" /> Inondations</label>
-        <label class="check-item"><input type="checkbox" formControlName="perteVents" /> Vents violents</label>
+        <label class="check-item"><input type="checkbox" formControlName="perte_sec" /> Sécheresse</label>
+        <label class="check-item"><input type="checkbox" formControlName="perte_inondation" /> Inondations</label>
+        <label class="check-item"><input type="checkbox" formControlName="perte_vents" /> Vents violents</label>
       </div>
       <div class="form-group">
-        <label for="strategiesAdaptation">Stratégies d'adaptation</label>
-        <textarea id="strategiesAdaptation" class="form-control" formControlName="strategiesAdaptation" rows="2"></textarea>
+        <label for="strategies_adaptation">Stratégies d'adaptation</label>
+        <textarea id="strategies_adaptation" class="form-control" formControlName="strategies_adaptation" rows="2"></textarea>
       </div>
     </div>
 
@@ -223,16 +232,16 @@
       <div class="section-head"><span class="section-num">6</span> Production</div>
       <div class="grid-3">
         <div class="form-group">
-          <label for="varietesCultivees">Variétés cultivées</label>
-          <input id="varietesCultivees" class="form-control" formControlName="varietesCultivees" type="text" />
+          <label for="varietes_cultivees">Variétés cultivées</label>
+          <input id="varietes_cultivees" class="form-control" formControlName="varietes_cultivees" type="text" />
         </div>
         <div class="form-group">
-          <label for="rendementMoyen">Rendement moyen (kg/ha)</label>
-          <input id="rendementMoyen" class="form-control" formControlName="rendementMoyen" type="number" min="0" />
+          <label for="rendement_moyen">Rendement moyen (kg/ha)</label>
+          <input id="rendement_moyen" class="form-control" formControlName="rendement_moyen" type="number" min="0" />
         </div>
         <div class="form-group">
-          <label for="campagnesParAn">Campagnes par an</label>
-          <input id="campagnesParAn" class="form-control" formControlName="campagnesParAn" type="number" min="1" max="4" />
+          <label for="campagnes_par_an">Campagnes par an</label>
+          <input id="campagnes_par_an" class="form-control" formControlName="campagnes_par_an" type="number" min="1" max="4" />
         </div>
       </div>
     </div>
@@ -241,15 +250,15 @@
     <div class="section-card">
       <div class="section-head"><span class="section-num">7</span> Contraintes majeures</div>
       <div class="checkbox-row">
-        <label class="check-item"><input type="checkbox" formControlName="manqueEau" /> Manque d'eau</label>
-        <label class="check-item"><input type="checkbox" formControlName="intrantsCouteux" /> Intrants coûteux</label>
-        <label class="check-item"><input type="checkbox" formControlName="accesCred" /> Accès au crédit</label>
-        <label class="check-item"><input type="checkbox" formControlName="degradationSols" /> Dégradation des sols</label>
-        <label class="check-item"><input type="checkbox" formControlName="changementsClimatiques" /> Changements climatiques</label>
+        <label class="check-item"><input type="checkbox" formControlName="manque_eau" /> Manque d'eau</label>
+        <label class="check-item"><input type="checkbox" formControlName="intrants_couteux" /> Intrants coûteux</label>
+        <label class="check-item"><input type="checkbox" formControlName="acces_credit" /> Accès au crédit</label>
+        <label class="check-item"><input type="checkbox" formControlName="degradation_sols" /> Dégradation des sols</label>
+        <label class="check-item"><input type="checkbox" formControlName="changements_climatiques" /> Changements climatiques</label>
       </div>
       <div class="form-group">
-        <label for="lieuVente">Lieu de vente</label>
-        <input id="lieuVente" class="form-control" formControlName="lieuVente" type="text" />
+        <label for="lieu_vente">Lieu de vente</label>
+        <input id="lieu_vente" class="form-control" formControlName="lieu_vente" type="text" />
       </div>
     </div>
 
@@ -257,8 +266,8 @@
     <div class="section-card">
       <div class="section-head"><span class="section-num">8</span> Besoins prioritaires</div>
       <div class="form-group">
-        <label for="besoinsPrioritaires">Décrivez les besoins prioritaires</label>
-        <textarea id="besoinsPrioritaires" class="form-control" formControlName="besoinsPrioritaires" rows="3"></textarea>
+        <label for="besoins_prioritaires">Décrivez les besoins prioritaires</label>
+        <textarea id="besoins_prioritaires" class="form-control" formControlName="besoins_prioritaires" rows="3"></textarea>
       </div>
     </div>
 

@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  inject,
   OnInit,
   signal,
   ViewChild,
@@ -9,9 +10,9 @@ import {
 import { GoogleMap, MapMarker, MapInfoWindow } from '@angular/google-maps';
 import { MatIcon } from '@angular/material/icon';
 import { RouterLink } from '@angular/router';
-import { db } from '../../db/database';
+import { firstValueFrom } from 'rxjs';
 import { Producer } from '../../models/models';
-import { scoreProducer } from '../../utils/scoring';
+import { ApiService } from '../../services/api.service';
 
 interface MapProducer extends Producer {
   score: number;
@@ -31,9 +32,12 @@ const CIRCLE = 0 as unknown as google.maps.SymbolPath;
 export class MapComponent implements OnInit {
   @ViewChild(MapInfoWindow) infoWindow?: MapInfoWindow;
 
+  private readonly api = inject(ApiService);
+
   producers = signal<MapProducer[]>([]);
   selected = signal<MapProducer | null>(null);
   loaded = signal(false);
+  error = signal<string | null>(null);
 
   readonly center = signal<google.maps.LatLngLiteral>({ lat: 2.19, lng: 22.48 });
   readonly zoom = signal(10);
@@ -63,24 +67,27 @@ export class MapComponent implements OnInit {
   }
 
   async ngOnInit(): Promise<void> {
-    const all = await db.producers.toArray();
-    const withGps = all
-      .filter((p) => p.latitude != null && p.longitude != null)
-      .map((p) => ({
-        ...p,
-        score: scoreProducer(p).total,
-        position: { lat: p.latitude!, lng: p.longitude! },
+    try {
+      const mapData = await firstValueFrom(this.api.getMapData());
+
+      const producers: MapProducer[] = mapData.producers.map((mp) => ({
+        ...mp.producer,
+        score: mp.score,
+        position: mp.position as google.maps.LatLngLiteral,
       }));
 
-    this.producers.set(withGps);
+      this.producers.set(producers);
 
-    if (withGps.length > 0) {
-      const avgLat = withGps.reduce((s, p) => s + p.position.lat, 0) / withGps.length;
-      const avgLng = withGps.reduce((s, p) => s + p.position.lng, 0) / withGps.length;
-      this.center.set({ lat: avgLat, lng: avgLng });
+      if (producers.length > 0) {
+        const avgLat = producers.reduce((s, p) => s + p.position.lat, 0) / producers.length;
+        const avgLng = producers.reduce((s, p) => s + p.position.lng, 0) / producers.length;
+        this.center.set({ lat: avgLat, lng: avgLng });
+      }
+    } catch (err) {
+      this.error.set(err instanceof Error ? err.message : 'Erreur de chargement de la carte');
+    } finally {
+      this.loaded.set(true);
     }
-
-    this.loaded.set(true);
   }
 
   openInfo(marker: MapMarker, p: MapProducer): void {

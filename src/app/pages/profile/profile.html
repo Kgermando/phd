@@ -1,0 +1,87 @@
+<div class="profile-container">
+  <div class="profile-card">
+    <div class="profile-header">
+      <div class="avatar-large">
+        {{ auth.currentUser()?.fullname?.charAt(0)?.toUpperCase() }}
+      </div>
+      <div class="profile-info">
+        <h1 class="profile-name">{{ auth.currentUser()?.fullname }}</h1>
+        <p class="profile-role">{{ getRoleLabel(auth.currentUser()?.role || '') }}</p>
+      </div>
+    </div>
+
+    <div class="profile-content">
+      <div class="info-section">
+        <h2>Informations personnelles</h2>
+        
+        <div class="info-item">
+          <label>Nom complet</label>
+          <div class="info-value">
+            <mat-icon>person</mat-icon>
+            {{ auth.currentUser()?.fullname }}
+          </div>
+        </div>
+
+        <div class="info-item">
+          <label>Adresse e-mail</label>
+          <div class="info-value">
+            <mat-icon>email</mat-icon>
+            {{ auth.currentUser()?.email }}
+          </div>
+        </div>
+
+        <div class="info-item">
+          <label>Téléphone</label>
+          <div class="info-value">
+            <mat-icon>phone</mat-icon>
+            {{ auth.currentUser()?.telephone }}
+          </div>
+        </div>
+
+        <div class="info-item">
+          <label>Rôle</label>
+          <div class="info-value">
+            <mat-icon>admin_panel_settings</mat-icon>
+            {{ getRoleLabel(auth.currentUser()?.role || '') }}
+          </div>
+        </div>
+
+        <div class="info-item">
+          <label>Statut</label>
+          <div class="info-value">
+            <mat-icon [class.status-active]="auth.currentUser()?.status">
+              {{ auth.currentUser()?.status ? 'check_circle' : 'cancel' }}
+            </mat-icon>
+            {{ auth.currentUser()?.status ? 'Actif' : 'Inactif' }}
+          </div>
+        </div>
+      </div>
+
+      @if (auth.currentUser()?.created_at || auth.currentUser()?.updated_at) {
+        <div class="info-section">
+          <h2>Dates</h2>
+          
+          @if (auth.currentUser()?.created_at) {
+            <div class="info-item">
+              <label>Date de création</label>
+              <div class="info-value">
+                <mat-icon>calendar_today</mat-icon>
+                {{ auth.currentUser()?.created_at | date: 'dd/MM/yyyy' }}
+              </div>
+            </div>
+          }
+
+          @if (auth.currentUser()?.updated_at) {
+            <div class="info-item">
+              <label>Dernière mise à jour</label>
+              <div class="info-value">
+                <mat-icon>update</mat-icon>
+                {{ auth.currentUser()?.updated_at | date: 'dd/MM/yyyy' }}
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  </div>
+</div>

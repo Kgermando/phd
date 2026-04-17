@@ -1,0 +1,128 @@
+<!-- Header -->
+<div class="page-header">
+  <div>
+    <h2>Utilisateurs</h2>
+    <p class="subtitle">Gestion des utilisateurs du système</p>
+  </div>
+  <a routerLink="/utilisateurs/nouveau" class="btn btn-primary">
+    <mat-icon aria-hidden="true">add</mat-icon> Nouvel utilisateur
+  </a>
+</div>
+
+<!-- Filters -->
+<div class="filters-bar">
+  <div class="search-box">
+    <mat-icon aria-hidden="true">search</mat-icon>
+    <input 
+      type="text" 
+      placeholder="Rechercher par nom ou email..." 
+      [value]="search()"
+      (input)="search.set($event.target.value)"
+      (keyup.enter)="onSearch()"
+    />
+  </div>
+
+
+</div>
+
+<!-- Content -->
+@if (loading()) {
+  <div class="loading-prompt">
+    <div class="spinner"></div>
+    <p>Chargement des utilisateurs...</p>
+  </div>
+} @else if (error()) {
+  <div class="error-prompt">
+    <mat-icon>error</mat-icon>
+    <p>{{ error() }}</p>
+  </div>
+} @else if (all().length === 0) {
+  <div class="empty-prompt">
+    <mat-icon>people_outline</mat-icon>
+    <p>Aucun utilisateur trouvé</p>
+  </div>
+} @else {
+  <div class="table-container">
+    <table class="users-table">
+      <thead>
+        <tr>
+          <th>Utilisateur</th>
+          <th>Email</th>
+          <th>Téléphone</th>
+          <th>Rôle</th>
+          <th>Statut</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (user of all(); track user.uuid) {
+          <tr>
+            <td>
+              <div class="user-cell">
+                <div class="user-avatar">
+                  {{ user.fullname.charAt(0).toUpperCase() }}
+                </div>
+                <span>{{ user.fullname }}</span>
+              </div>
+            </td>
+            <td>{{ user.email }}</td>
+            <td>{{ user.telephone }}</td>
+            <td>
+              <span class="badge badge-role">
+                {{ getRoleLabel(user.role) }}
+              </span>
+            </td>
+            <td>
+              <span class="badge" [class]="getStatusBadgeClass(user.status)">
+                {{ getStatusLabel(user.status) }}
+              </span>
+            </td>
+            <td>
+              <div class="actions">
+                <a 
+                  [routerLink]="['/utilisateurs', user.uuid]"
+                  class="btn-icon"
+                  title="Voir les détails"
+                >
+                  <mat-icon>visibility</mat-icon>
+                </a>
+                <a 
+                  [routerLink]="['/utilisateurs', user.uuid, 'modifier']"
+                  class="btn-icon"
+                  title="Modifier"
+                >
+                  <mat-icon>edit</mat-icon>
+                </a>
+              </div>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+
+    <!-- Pagination -->
+    <div class="pagination-controls">
+      <div class="pagination-info">
+        Page {{ currentPage() }} / {{ totalPages() }}
+      </div>
+      <div class="pagination-buttons">
+        <button 
+          class="btn btn-secondary" 
+          (click)="previousPage()"
+          [disabled]="currentPage() === 1 || loading()"
+        >
+          <mat-icon>chevron_left</mat-icon>
+          Précédent
+        </button>
+        <button 
+          class="btn btn-secondary" 
+          (click)="nextPage()"
+          [disabled]="currentPage() >= totalPages() || loading()"
+        >
+          Suivant
+          <mat-icon>chevron_right</mat-icon>
+        </button>
+      </div>
+    </div>
+  </div>
+}

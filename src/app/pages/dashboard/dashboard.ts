@@ -1,26 +1,28 @@
-import { ChangeDetectionStrategy, Component, OnInit, computed, signal } from '@angular/core';
+﻿import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
+import { DecimalPipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { MatIcon } from '@angular/material/icon';
-import { db } from '../../db/database';
-import { Producer } from '../../models/models';
+import { firstValueFrom } from 'rxjs';
+import { Producer, PieSlice, ZoneStat, BarStat, UserStats, LineData } from '../../models/models';
+import { ApiService } from '../../services/api.service';
 import { scoreProducer } from '../../utils/scoring';
 
-interface ZoneStat { zone: string; count: number; eligible: number; avgScore: number; }
-interface BarStat { label: string; count: number; }
-interface PieSlice { label: string; count: number; pct: number; color: string; d: string; }
+interface RecentItem extends Producer { score: number; }
 interface LineDot { x: number; y: number; count: number; label: string; }
-
-const MONTHS_FR = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'];
 
 @Component({
   selector: 'app-dashboard',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, MatIcon],
+  imports: [RouterLink, MatIcon, DecimalPipe],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss',
 })
 export class DashboardComponent implements OnInit {
+  private readonly api = inject(ApiService);
+
   loaded = signal(false);
+  error = signal<string | null>(null);
+
   total = signal(0);
   eligible = signal(0);
   nonEligible = signal(0);
@@ -29,20 +31,21 @@ export class DashboardComponent implements OnInit {
   hommes = signal(0);
   zones = signal<ZoneStat[]>([]);
   maxZoneCount = signal(1);
-  recent = signal<Producer[]>([]);
+  recent = signal<RecentItem[]>([]);
 
-  // Pie charts
+  // Pie charts (pre-computed by backend)
   statutFoncierPie = signal<PieSlice[]>([]);
   sourceEauPie     = signal<PieSlice[]>([]);
   typeRizPie       = signal<PieSlice[]>([]);
   cooperativePie   = signal<PieSlice[]>([]);
+  zonePie          = signal<PieSlice[]>([]);
 
-  // Bar chart (ordered data — tranche d'âge)
+  // Bar chart
   trancheAgeStats = signal<BarStat[]>([]);
   maxTrancheAge = computed(() => Math.max(...this.trancheAgeStats().map(s => s.count), 1));
 
-  // Line chart data
-  private _linePts = signal<{ month: string; label: string; count: number }[]>([]);
+  // Line chart
+  private readonly _linePts = signal<LineData[]>([]);
 
   lineChartDots = computed<LineDot[]>(() => {
     const pts = this._linePts();
@@ -81,9 +84,7 @@ export class DashboardComponent implements OnInit {
   // Sexe donut
   private readonly CIRC = 314.16;
   sexeDonut = computed(() => {
-    const t = this.total();
-    const f = this.femmes();
-    const h = this.hommes();
+    const t = this.total(), f = this.femmes(), h = this.hommes();
     if (t === 0) return { fDash: `0 ${this.CIRC}`, hDash: `0 ${this.CIRC}`, fOffset: this.CIRC, hOffset: this.CIRC };
     return {
       fDash: `${(f / t) * this.CIRC} ${this.CIRC}`,
@@ -93,127 +94,62 @@ export class DashboardComponent implements OnInit {
     };
   });
 
+  // Agent performance
+  userPerformance = signal<UserStats[]>([]);
+
+  // Derived
+  eligibilityRate = computed(() => this.total() > 0 ? Math.round((this.eligible() / this.total()) * 100) : 0);
+
   async ngOnInit(): Promise<void> {
-    const all = await db.producers.toArray();
-    const scored = all.map((p) => ({ ...p, score: scoreProducer(p).total }));
+    try {
+      const [statsResp, perfResp] = await Promise.all([
+        firstValueFrom(this.api.getDashboardStats()),
+        firstValueFrom(this.api.getUserPerformance()),
+      ]);
 
-    this.total.set(scored.length);
-    const eli = scored.filter((p) => p.score >= 60);
-    this.eligible.set(eli.length);
-    this.nonEligible.set(scored.length - eli.length);
-    this.femmes.set(scored.filter((p) => p.sexe === 'femme').length);
-    this.hommes.set(scored.filter((p) => p.sexe === 'homme').length);
-    const avg = scored.length ? Math.round(scored.reduce((s, p) => s + p.score, 0) / scored.length) : 0;
-    this.avgScore.set(avg);
+      const s = statsResp.data;
 
-    // Secteurs géographiques
-    const zoneMap = new Map<string, { count: number; eligible: number; scoreSum: number }>();
-    for (const p of scored) {
-      const z = p.zone || 'Inconnue';
-      const cur = zoneMap.get(z) ?? { count: 0, eligible: 0, scoreSum: 0 };
-      cur.count++;
-      if (p.score >= 60) cur.eligible++;
-      cur.scoreSum += p.score;
-      zoneMap.set(z, cur);
+      this.total.set(s.total);
+      this.eligible.set(s.eligible);
+      this.nonEligible.set(s.non_eligible);
+      this.avgScore.set(s.avg_score);
+      this.femmes.set(s.femmes);
+      this.hommes.set(s.hommes);
+      this.zones.set(s.zones ?? []);
+      this.maxZoneCount.set(s.max_zone_count ?? 1);
+
+      // Recent producers: score locally (backend preloads Champs)
+      this.recent.set(
+        (s.recent ?? []).map(p => ({ ...p, score: Math.round(scoreProducer(p).total) }))
+      );
+
+      // Pre-computed pies from backend
+      this.statutFoncierPie.set(s.statut_foncier_pie ?? []);
+      this.sourceEauPie.set(s.source_eau_pie ?? []);
+      this.typeRizPie.set(s.type_riz_pie ?? []);
+      this.cooperativePie.set(s.cooperative_pie ?? []);
+      this.zonePie.set(s.zone_pie ?? []);
+
+      this.trancheAgeStats.set(s.tranche_age_stats ?? []);
+      this._linePts.set(s.line_data ?? []);
+
+      this.userPerformance.set(perfResp.data ?? []);
+    } catch (err) {
+      this.error.set(err instanceof Error ? err.message : 'Erreur de chargement du tableau de bord');
+    } finally {
+      this.loaded.set(true);
     }
-    const zStats: ZoneStat[] = [...zoneMap.entries()].map(([zone, v]) => ({
-      zone, count: v.count, eligible: v.eligible,
-      avgScore: v.count ? Math.round(v.scoreSum / v.count) : 0,
-    })).sort((a, b) => b.count - a.count);
-    this.zones.set(zStats);
-    this.maxZoneCount.set(Math.max(...zStats.map((z) => z.count), 1));
-
-    const sortedByDate = [...scored].sort((a, b) =>
-      b.dateRecensement.localeCompare(a.dateRecensement)
-    );
-    this.recent.set(sortedByDate.slice(0, 6));
-
-    // Pie: Statut foncier
-    const sfLabels: Record<string, string> = { proprietaire: 'Propriétaire', exploitant: 'Exploitant', metayer: 'Métayer', autre: 'Autre' };
-    const sfMap = new Map<string, number>();
-    for (const p of scored) sfMap.set(p.statutFoncier, (sfMap.get(p.statutFoncier) ?? 0) + 1);
-    this.statutFoncierPie.set(this.buildPie(
-      [...sfMap.entries()].map(([k, v]) => ({ label: sfLabels[k] ?? k, count: v })).sort((a, b) => b.count - a.count),
-      ['#1565c0', '#42a5f5', '#29b6f6', '#90caf9'],
-    ));
-
-    // Pie: Source d'eau
-    const seLabels: Record<string, string> = { pluie: 'Pluie', fleuve: 'Fleuve', barrage: 'Barrage', forage: 'Forage' };
-    const seMap = new Map<string, number>();
-    for (const p of scored) seMap.set(p.sourceEau, (seMap.get(p.sourceEau) ?? 0) + 1);
-    this.sourceEauPie.set(this.buildPie(
-      [...seMap.entries()].map(([k, v]) => ({ label: seLabels[k] ?? k, count: v })).sort((a, b) => b.count - a.count),
-      ['#0277bd', '#26c6da', '#00897b', '#80deea'],
-    ));
-
-    // Pie: Type de riziculture
-    const trLabels: Record<string, string> = { pluviale: 'Pluviale', irriguee: 'Irriguée', 'bas-fond': 'Bas-fond' };
-    const trMap = new Map<string, number>();
-    for (const p of scored) for (const c of p.champs) trMap.set(c.typeRiziculture, (trMap.get(c.typeRiziculture) ?? 0) + 1);
-    this.typeRizPie.set(this.buildPie(
-      [...trMap.entries()].map(([k, v]) => ({ label: trLabels[k] ?? k, count: v })).sort((a, b) => b.count - a.count),
-      ['#2e7d32', '#558b2f', '#aed581'],
-    ));
-
-    // Pie: Coopérative
-    const coop = scored.filter(p => p.membreCooperative).length;
-    this.cooperativePie.set(this.buildPie(
-      [{ label: 'Membre', count: coop }, { label: 'Non-membre', count: scored.length - coop }],
-      ['#43a047', '#e53935'],
-    ));
-
-    // Bar: Tranches d'âge
-    const refYear = 2026;
-    const ages = scored.map(p => refYear - parseInt(p.dateNaissance?.split('-')[0] ?? '1980', 10));
-    this.trancheAgeStats.set([
-      { label: '< 25 ans',  count: ages.filter(a => a < 25).length },
-      { label: '25–35 ans', count: ages.filter(a => a >= 25 && a <= 35).length },
-      { label: '36–45 ans', count: ages.filter(a => a >= 36 && a <= 45).length },
-      { label: '46–55 ans', count: ages.filter(a => a >= 46 && a <= 55).length },
-      { label: '> 55 ans',  count: ages.filter(a => a > 55).length },
-    ]);
-
-    // Line: Évolution des recensements par mois
-    const monthMap = new Map<string, number>();
-    for (const p of scored) {
-      const ym = p.dateRecensement?.slice(0, 7) ?? '';
-      if (ym) monthMap.set(ym, (monthMap.get(ym) ?? 0) + 1);
-    }
-    this._linePts.set(
-      [...monthMap.entries()]
-        .sort((a, b) => a[0].localeCompare(b[0]))
-        .map(([ym, count]) => {
-          const [year, monthIdx] = ym.split('-');
-          return { month: ym, label: `${MONTHS_FR[parseInt(monthIdx, 10) - 1]} ${year}`, count };
-        }),
-    );
-
-    this.loaded.set(true);
   }
 
   pct(part: number, total: number): number {
-    return Math.round((part / total) * 100);
+    return total > 0 ? Math.round((part / total) * 100) : 0;
   }
 
-  private buildPie(data: { label: string; count: number }[], colors: string[]): PieSlice[] {
-    const total = data.reduce((s, d) => s + d.count, 0);
-    const CX = 60, CY = 60, R = 54;
-    let cumAngle = -Math.PI / 2;
-    return data.map((d, i) => {
-      const proportion = total > 0 ? d.count / total : 0;
-      const angle = proportion * 2 * Math.PI;
-      const x1 = CX + R * Math.cos(cumAngle);
-      const y1 = CY + R * Math.sin(cumAngle);
-      cumAngle += angle;
-      const x2 = CX + R * Math.cos(cumAngle);
-      const y2 = CY + R * Math.sin(cumAngle);
-      const largeArc = angle > Math.PI ? 1 : 0;
-      const path = proportion >= 1
-        ? `M ${CX} ${CY - R} A ${R} ${R} 0 1 1 ${CX - 0.01} ${CY - R} Z`
-        : proportion === 0
-          ? ''
-          : `M ${CX} ${CY} L ${x1.toFixed(2)} ${y1.toFixed(2)} A ${R} ${R} 0 ${largeArc} 1 ${x2.toFixed(2)} ${y2.toFixed(2)} Z`;
-      return { label: d.label, count: d.count, pct: Math.round(proportion * 100), color: colors[i % colors.length], d: path };
-    });
+  exportPdf(): void {
+    window.open(`${this.api.baseUrl}/dashboard/export/pdf`, '_blank');
+  }
+
+  exportExcel(): void {
+    window.open(`${this.api.baseUrl}/dashboard/export/excel`, '_blank');
   }
 }

@@ -273,6 +273,23 @@
   }
 }
 
+.offline-banner {
+  background: #fff8e1;
+  color: #e65100;
+  padding: 14px 18px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  border-left: 4px solid #ff8f00;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+
+  mat-icon {
+    color: #ff8f00;
+  }
+}
+
 /* ── GPS section ── */
 .gps-status-bar {
   display: flex;

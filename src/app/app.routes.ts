@@ -1,11 +1,12 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './guards/auth.guard';
+import { AUTH_ROUTES } from './auth';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
   {
-    path: 'login',
-    loadComponent: () => import('./pages/login/login').then((m) => m.LoginComponent),
+    path: 'auth',
+    children: AUTH_ROUTES,
   },
   {
     path: '',
@@ -35,6 +36,26 @@ export const routes: Routes = [
       {
         path: 'carte',
         loadComponent: () => import('./pages/map/map').then((m) => m.MapComponent),
+      },
+      {
+        path: 'profil',
+        loadComponent: () => import('./pages/profile/profile').then((m) => m.ProfileComponent),
+      },
+      {
+        path: 'utilisateurs',
+        loadComponent: () => import('./pages/users/users-list').then((m) => m.UsersListComponent),
+      },
+      {
+        path: 'utilisateurs/nouveau',
+        loadComponent: () => import('./pages/users/user-form').then((m) => m.UserFormComponent),
+      },
+      {
+        path: 'utilisateurs/:id',
+        loadComponent: () => import('./pages/users/users-list').then((m) => m.UsersListComponent),
+      },
+      {
+        path: 'utilisateurs/:id/modifier',
+        loadComponent: () => import('./pages/users/user-form').then((m) => m.UserFormComponent),
       },
     ],
   },

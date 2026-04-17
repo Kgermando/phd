@@ -1,0 +1,164 @@
+<!-- Header -->
+<div class="form-header">
+  <div>
+    <h2>{{ isEdit() ? 'Modifier l\'utilisateur' : 'Nouvel utilisateur' }}</h2>
+    <p class="subtitle">{{ isEdit() ? 'Mettez à jour les informations de l\'utilisateur' : 'Créez un nouvel utilisateur dans le système' }}</p>
+  </div>
+</div>
+
+<!-- Form -->
+<div class="form-container">
+  <form [formGroup]="form" (ngSubmit)="onSubmit()">
+    <!-- Status alerts -->
+    @if (saved()) {
+      <div class="alert alert-success">
+        <mat-icon>check_circle</mat-icon>
+        <span>{{ isEdit() ? 'Utilisateur mise à jour' : 'Utilisateur créé' }} avec succès!</span>
+      </div>
+    }
+
+    @if (saveError()) {
+      <div class="alert alert-error">
+        <mat-icon>error</mat-icon>
+        <span>{{ saveError() }}</span>
+      </div>
+    }
+
+    <!-- Form sections -->
+    <div class="form-section">
+      <h3>Informations personnelles</h3>
+
+      <div class="form-group">
+        <label for="fullname">Nom complet *</label>
+        <input
+          id="fullname"
+          type="text"
+          formControlName="fullname"
+          placeholder="Ex: Jean Dupont"
+          class="form-input"
+          [class.error]="form.get('fullname')?.hasError('required') && form.get('fullname')?.touched"
+        />
+        @if (form.get('fullname')?.hasError('required') && form.get('fullname')?.touched) {
+          <span class="error-message">{{ getErrorMessage('fullname') }}</span>
+        }
+      </div>
+
+      <div class="form-group">
+        <label for="email">Adresse e-mail *</label>
+        <input
+          id="email"
+          type="email"
+          formControlName="email"
+          placeholder="Ex: jean@example.com"
+          class="form-input"
+          [class.error]="form.get('email')?.hasError('email') && form.get('email')?.touched"
+        />
+        @if (form.get('email')?.hasError('email') && form.get('email')?.touched) {
+          <span class="error-message">{{ getErrorMessage('email') }}</span>
+        }
+      </div>
+
+      <div class="form-group">
+        <label for="telephone">Téléphone *</label>
+        <input
+          id="telephone"
+          type="tel"
+          formControlName="telephone"
+          placeholder="Ex: +243 123 456 789"
+          class="form-input"
+        />
+      </div>
+    </div>
+
+    <!-- Role and Status -->
+    <div class="form-section">
+      <h3>Rôle et statut</h3>
+
+      <div class="form-group">
+        <label for="role">Rôle *</label>
+        <select id="role" formControlName="role" class="form-select">
+          @for (role of roles; track role) {
+            <option [value]="role">{{ getRoleLabel(role) }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="permission">Permission</label>
+        <select id="permission" formControlName="permission" class="form-select">
+          <option value="read">Read</option>
+          <option value="write">Write</option>
+          <option value="all">All</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="status" class="checkbox-label">
+          <input
+            id="status"
+            type="checkbox"
+            formControlName="status"
+            class="form-checkbox"
+          />
+          <span>Utilisateur actif</span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Password section -->
+    <div class="form-section">
+      <h3>Mot de passe{{ isEdit() ? ' (laisser vide pour conserver)' : '' }}</h3>
+
+      <div class="form-group">
+        <label for="password">Mot de passe{{ isEdit() ? '' : ' *' }}</label>
+        <input
+          id="password"
+          type="password"
+          formControlName="password"
+          placeholder="Entrez un mot de passe sécurisé"
+          class="form-input"
+          [class.error]="form.get('password')?.hasError('required') && form.get('password')?.touched"
+        />
+        @if (form.get('password')?.hasError('required') && form.get('password')?.touched) {
+          <span class="error-message">{{ getErrorMessage('password') }}</span>
+        }
+      </div>
+
+      <div class="form-group">
+        <label for="password_confirm">Confirmer le mot de passe{{ isEdit() ? '' : ' *' }}</label>
+        <input
+          id="password_confirm"
+          type="password"
+          formControlName="password_confirm"
+          placeholder="Confirmez le mot de passe"
+          class="form-input"
+        />
+      </div>
+    </div>
+
+    <!-- Form actions -->
+    <div class="form-actions">
+      <button
+        type="button"
+        (click)="cancel()"
+        class="btn btn-secondary"
+        [disabled]="saving()"
+      >
+        Annuler
+      </button>
+      <button
+        type="submit"
+        class="btn btn-primary"
+        [disabled]="!form.valid || saving()"
+      >
+        @if (saving()) {
+          <span class="spinner-small"></span>
+          Sauvegarde...
+        } @else {
+          <mat-icon>save</mat-icon>
+          {{ isEdit() ? 'Mettre à jour' : 'Créer' }}
+        }
+      </button>
+    </div>
+  </form>
+</div>

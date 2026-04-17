@@ -1,5 +1,10 @@
 .page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
   margin-bottom: 28px;
+  flex-wrap: wrap;
 
   h2 {
     font-size: 24px;
@@ -10,6 +15,31 @@
   p {
     color: var(--text-muted);
     margin-top: 4px;
+  }
+}
+
+.page-actions {
+  display: flex;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.dash-error {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 20px;
+  margin-bottom: 20px;
+  background: #fdecea;
+  border: 1px solid #f5c6cb;
+  border-radius: 8px;
+  color: #c62828;
+  font-size: 14px;
+
+  mat-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
   }
 }
 
@@ -353,6 +383,10 @@
     flex-direction: column;
     align-items: flex-start;
   }
+
+  .agent-table-wrap {
+    overflow-x: auto;
+  }
 }
 
 @media (max-width: 480px) {
@@ -369,4 +403,161 @@
     align-items: flex-start;
     gap: 8px;
   }
+}
+
+// ── Eligibility rate KPI card ────────────────────────────────
+.stat-card.rate {
+  border-top-color: #7b1fa2;
+
+  .stat-value {
+    color: #7b1fa2;
+  }
+}
+
+.eligibility-bar {
+  height: 5px;
+  background: #e0e0e0;
+  border-radius: 3px;
+  margin-top: 10px;
+  overflow: hidden;
+}
+
+.eligibility-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #7b1fa2 0%, #e040fb 100%);
+  border-radius: 3px;
+  transition: width 0.8s ease;
+}
+
+// ── Zone pie chart (wide layout) ─────────────────────────────
+.zone-pie-wrap {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.zone-pie-svg {
+  width: 130px;
+  height: 130px;
+  flex-shrink: 0;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,.12));
+}
+
+.zone-pie-legend {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 8px 20px;
+  flex: 1;
+}
+
+.legend-zone-name {
+  flex: 1;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+// ── Agent performance table ───────────────────────────────────
+.agent-table-wrap {
+  overflow-x: auto;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+
+.agent-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+
+  thead tr {
+    background: #f5f5f5;
+  }
+
+  th, td {
+    padding: 10px 14px;
+    text-align: left;
+    border-bottom: 1px solid #f0f0f0;
+  }
+
+  th {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  tbody tr {
+    transition: background 0.12s;
+
+    &:hover {
+      background: #fafafa;
+    }
+
+    &:last-child td {
+      border-bottom: none;
+    }
+  }
+
+  .text-right { text-align: right; }
+  .text-green { color: #2e7d32; font-weight: 600; }
+  .text-red   { color: var(--danger); font-weight: 600; }
+}
+
+.agent-name {
+  font-weight: 600;
+  color: var(--primary-dark);
+}
+
+// ── Rank medals ───────────────────────────────────────────────
+.rank {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: 700;
+  background: #eeeeee;
+  color: #555;
+
+  &.rank-gold   { background: #ffd600; color: #6d4c00; }
+  &.rank-silver { background: #bdbdbd; color: #fff; }
+  &.rank-bronze { background: #8d6e63; color: #fff; }
+}
+
+// ── Inline completion rate bar ────────────────────────────────
+.rate-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 130px;
+}
+
+.rate-bar-bg {
+  flex: 1;
+  height: 8px;
+  background: #e0e0e0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.rate-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.6s ease;
+
+  &.rate-green { background: #43a047; }
+  &.rate-red   { background: var(--danger); }
+}
+
+.rate-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--primary-dark);
+  min-width: 36px;
+  text-align: right;
 }

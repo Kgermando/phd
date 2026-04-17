@@ -1,4 +1,8 @@
-@if (producer()) {
+﻿@if (loading()) {
+  <div class="loading-wrap" aria-busy="true" aria-label="Chargement…">
+    <mat-icon class="spin" aria-hidden="true">autorenew</mat-icon>
+  </div>
+} @else if (producer()) {
   <div class="detail-page">
     <div class="detail-header">
       <div class="detail-header-left">
@@ -8,11 +12,11 @@
         <div class="header-info">
           <div class="header-breadcrumb">Producteurs</div>
           <h2>{{ producer()!.nom }}</h2>
-          <p class="header-sub">Recensé le {{ producer()!.dateRecensement }} · Zone {{ producer()!.zone }}</p>
+          <p class="header-sub">{{ producer()!.village }}</p>
         </div>
       </div>
       <div class="header-actions">
-        <a [routerLink]="['/producteurs', producer()!.id, 'modifier']" class="btn btn-ghost">
+        <a [routerLink]="['/producteurs', producer()!.uuid, 'modifier']" class="btn btn-ghost">
           <mat-icon aria-hidden="true">edit</mat-icon> Modifier
         </a>
         <button class="btn btn-danger" (click)="delete()">
@@ -30,10 +34,10 @@
         <h3>{{ producer()!.nom }}</h3>
         <div class="profile-meta">
           <span class="meta-chip">{{ producer()!.sexe }}</span>
-          <span class="meta-chip"><mat-icon aria-hidden="true">place</mat-icon> {{ producer()!.village }}, {{ producer()!.zone }}</span>
-          <span class="meta-chip">{{ producer()!.anneesExperience }} ans d'expérience</span>
-          @if (producer()!.membreCooperative) {
-            <span class="meta-chip"><mat-icon aria-hidden="true">handshake</mat-icon> {{ producer()!.nomCooperative || 'Coopérative' }}</span>
+          <span class="meta-chip"><mat-icon aria-hidden="true">place</mat-icon> {{ producer()!.village }}</span>
+          <span class="meta-chip">{{ producer()!.annees_experience }} ans d'experience</span>
+          @if (producer()!.membre_cooperative) {
+            <span class="meta-chip"><mat-icon aria-hidden="true">handshake</mat-icon> {{ producer()!.nom_cooperative || 'Cooperative' }}</span>
           }
           @if (producer()!.telephone) {
             <span class="meta-chip"><mat-icon aria-hidden="true">phone</mat-icon> {{ producer()!.telephone }}</span>
@@ -42,33 +46,43 @@
       </div>
     </div>
 
-    <!-- Scoring -->
-    @if (scoring()) {
-      <div class="score-card">
+    <!-- Score section -->
+    <div class="score-card">
+      <div class="score-card-header">
+        <span class="info-card-title"><mat-icon aria-hidden="true">analytics</mat-icon> Score de selection</span>
+        <button class="btn btn-primary btn-sm" (click)="openNewScore()" aria-label="Ajouter un score">
+          <mat-icon aria-hidden="true">add</mat-icon> Nouveau score
+        </button>
+      </div>
+
+      @if (latestScore()) {
         <div class="score-banner">
           <div>
-            <div class="score-big" [class.eligible]="scoring()!.eligible" [class.non]="!scoring()!.eligible">
-              {{ scoring()!.total }}<span class="score-denom">/100</span>
+            <div
+              class="score-big"
+              [class.eligible]="isEligible()"
+              [class.non]="!isEligible()"
+            >
+              {{ latestScore()!.score_total }}<span class="score-denom">/100</span>
             </div>
-            <div class="score-subtitle">Score de sélection</div>
+            <div class="score-subtitle">Score actuel</div>
           </div>
           <div
             class="eligibility-badge"
-            [class.eligible-badge]="scoring()!.eligible"
-            [class.ineligible-badge]="!scoring()!.eligible"
+            [class.eligible-badge]="isEligible()"
+            [class.ineligible-badge]="!isEligible()"
           >
-            <mat-icon aria-hidden="true">{{ scoring()!.eligible ? 'check_circle' : 'cancel' }}</mat-icon>
-            {{ scoring()!.eligible ? 'Éligible au projet' : 'Non éligible (seuil : 60/100)' }}
+            <mat-icon aria-hidden="true">{{ isEligible() ? 'check_circle' : 'cancel' }}</mat-icon>
+            {{ isEligible() ? 'Eligible au projet' : 'Non eligible (seuil : 60/100)' }}
           </div>
         </div>
 
-        <!-- Overall bar -->
         <div class="overall-bar-wrap">
           <div class="score-bar-bg overall-bar">
             <div
               class="score-bar-fill"
-              [style.width.%]="scoring()!.total"
-              [style.background]="scoring()!.eligible ? '#43a047' : '#ef5350'"
+              [style.width.%]="latestScore()!.score_total"
+              [style.background]="isEligible() ? '#43a047' : '#ef5350'"
             ></div>
           </div>
           <div class="bar-labels">
@@ -78,67 +92,123 @@
           </div>
         </div>
 
-        <!-- Criteria detail -->
-        <ul class="criteria-list" aria-label="Détail du scoring">
-          @for (d of scoring()!.details; track d.critere) {
+        <ul class="criteria-list" aria-label="Detail du scoring">
+          @for (c of scoreCriteria; track c.key) {
             <li class="criteria-item">
-              <span class="crit-name">{{ d.critere }}</span>
-              <span class="crit-desc">{{ d.description }}</span>
+              <span class="crit-name">{{ c.label }}</span>
               <div class="crit-bar">
                 <div class="score-bar-bg">
                   <div
                     class="score-bar-fill"
-                    [style.width.%]="(d.score / d.max) * 100"
-                    [style.background]="d.score / d.max >= 0.6 ? '#43a047' : '#ef5350'"
+                    [style.width.%]="(getScoreValue(latestScore()!, c.key) / c.max) * 100"
+                    [style.background]="getScoreValue(latestScore()!, c.key) / c.max >= 0.6 ? '#43a047' : '#ef5350'"
                   ></div>
                 </div>
               </div>
-              <span class="crit-score">{{ d.score }}/{{ d.max }}</span>
+              <span class="crit-score">{{ getScoreValue(latestScore()!, c.key) }}/{{ c.max }}</span>
             </li>
           }
         </ul>
-      </div>
-    }
+      } @else {
+        <p class="no-score-msg">Aucun score enregistre pour ce producteur.</p>
+      }
+
+      @if (showScoreForm()) {
+        <form [formGroup]="scoreForm" (ngSubmit)="submitScore()" class="score-form" aria-label="Formulaire de score">
+          <h4 class="score-form-title">{{ editingScore() ? 'Modifier le score' : 'Nouveau score' }}</h4>
+          @if (scoreError()) {
+            <p class="form-error" role="alert">{{ scoreError() }}</p>
+          }
+          <div class="score-inputs-grid">
+            @for (c of scoreCriteria; track c.key) {
+              <div class="score-input-row">
+                <label [for]="'sc-' + c.key">{{ c.label }} (0-{{ c.max }})</label>
+                <input
+                  [id]="'sc-' + c.key"
+                  type="number"
+                  [formControlName]="c.key"
+                  [min]="0"
+                  [max]="c.max"
+                  class="form-input score-num-input"
+                />
+              </div>
+            }
+          </div>
+          <div class="score-form-actions">
+            <button type="button" class="btn btn-ghost" (click)="cancelScoreForm()">Annuler</button>
+            <button type="submit" class="btn btn-primary" [disabled]="scoreForm.invalid || savingScore()">
+              @if (savingScore()) { Enregistrement... } @else { Enregistrer }
+            </button>
+          </div>
+        </form>
+      }
+
+      @if (scores().length > 0) {
+        <div class="score-history">
+          <h4 class="score-history-title">Historique des scores</h4>
+          <ul class="score-history-list" aria-label="Historique des scores">
+            @for (s of scores(); track s.uuid) {
+              <li class="score-history-item">
+                <span class="score-history-total">{{ s.score_total }}/100</span>
+                <span
+                  class="score-history-badge"
+                  [class.eligible-badge]="s.recommande"
+                  [class.ineligible-badge]="!s.recommande"
+                >{{ s.recommande ? 'Eligible' : 'Non eligible' }}</span>
+                <div class="score-history-actions">
+                  <button class="icon-btn" (click)="openEditScore(s)" aria-label="Modifier ce score">
+                    <mat-icon aria-hidden="true">edit</mat-icon>
+                  </button>
+                  <button class="icon-btn icon-btn-danger" (click)="deleteScore(s)" aria-label="Supprimer ce score">
+                    <mat-icon aria-hidden="true">delete</mat-icon>
+                  </button>
+                </div>
+              </li>
+            }
+          </ul>
+        </div>
+      }
+    </div>
 
     <!-- Info cards -->
     <div class="info-grid">
       <div class="info-card">
-        <div class="info-card-title"><mat-icon aria-hidden="true">info</mat-icon> Informations générales</div>
+        <div class="info-card-title"><mat-icon aria-hidden="true">info</mat-icon> Informations generales</div>
         <div class="info-row">
           <span class="info-label">Date de naissance</span>
-          <span class="info-value">{{ producer()!.dateNaissance || '—' }}</span>
+          <span class="info-value">{{ producer()!.date_naissance || '...' }}</span>
         </div>
         <div class="info-row">
           <span class="info-label">Groupement</span>
-          <span class="info-value">{{ producer()!.groupement || '—' }}</span>
+          <span class="info-value">{{ producer()!.groupement || '...' }}</span>
         </div>
         <div class="info-row">
           <span class="info-label">Statut foncier</span>
-          <span class="info-value">{{ producer()!.statutFoncier }}</span>
+          <span class="info-value">{{ producer()!.statut_foncier }}</span>
         </div>
         <div class="info-row">
-          <span class="info-label">Coopérative</span>
-          <span class="info-value">{{ producer()!.membreCooperative ? (producer()!.nomCooperative || 'Oui') : 'Non' }}</span>
+          <span class="info-label">Cooperative</span>
+          <span class="info-value">{{ producer()!.membre_cooperative ? (producer()!.nom_cooperative || 'Oui') : 'Non' }}</span>
         </div>
       </div>
 
       <div class="info-card">
         <div class="info-card-title"><mat-icon aria-hidden="true">grass</mat-icon> Production</div>
         <div class="info-row">
-          <span class="info-label">Variétés</span>
-          <span class="info-value">{{ producer()!.varietesCultivees || '—' }}</span>
+          <span class="info-label">Varietes</span>
+          <span class="info-value">{{ producer()!.varietes_cultivees || '...' }}</span>
         </div>
         <div class="info-row">
           <span class="info-label">Rendement moyen</span>
-          <span class="info-value">{{ producer()!.rendementMoyen }} kg/ha</span>
+          <span class="info-value">{{ producer()!.rendement_moyen }} kg/ha</span>
         </div>
         <div class="info-row">
           <span class="info-label">Campagnes/an</span>
-          <span class="info-value">{{ producer()!.campagnesParAn }}</span>
+          <span class="info-value">{{ producer()!.campagnes_par_an }}</span>
         </div>
         <div class="info-row">
           <span class="info-label">Lieu de vente</span>
-          <span class="info-value">{{ producer()!.lieuVente || '—' }}</span>
+          <span class="info-value">{{ producer()!.lieu_vente || '...' }}</span>
         </div>
       </div>
 
@@ -146,24 +216,24 @@
         <div class="info-card-title"><mat-icon aria-hidden="true">eco</mat-icon> Pratiques environnementales</div>
         <div class="info-row">
           <span class="info-label">Rotation cultures</span>
-          <span class="info-value" [class.bool-yes]="producer()!.rotationCultures" [class.bool-no]="!producer()!.rotationCultures">
-            {{ producer()!.rotationCultures ? 'Oui' : 'Non' }}
+          <span class="info-value" [class.bool-yes]="producer()!.rotation_cultures" [class.bool-no]="!producer()!.rotation_cultures">
+            {{ producer()!.rotation_cultures ? 'Oui' : 'Non' }}
           </span>
         </div>
         <div class="info-row">
           <span class="info-label">Compost/fumure</span>
-          <span class="info-value" [class.bool-yes]="producer()!.utilisationCompost" [class.bool-no]="!producer()!.utilisationCompost">
-            {{ producer()!.utilisationCompost ? 'Oui' : 'Non' }}
+          <span class="info-value" [class.bool-yes]="producer()!.utilisation_compost" [class.bool-no]="!producer()!.utilisation_compost">
+            {{ producer()!.utilisation_compost ? 'Oui' : 'Non' }}
           </span>
         </div>
         <div class="info-row">
           <span class="info-label">Source d'eau</span>
-          <span class="info-value">{{ producer()!.sourceEau }}</span>
+          <span class="info-value">{{ producer()!.source_eau }}</span>
         </div>
         <div class="info-row">
-          <span class="info-label">Présence arbres/haies</span>
-          <span class="info-value" [class.bool-yes]="producer()!.presenceArbres" [class.bool-no]="!producer()!.presenceArbres">
-            {{ producer()!.presenceArbres ? 'Oui' : 'Non' }}
+          <span class="info-label">Presence arbres/haies</span>
+          <span class="info-value" [class.bool-yes]="producer()!.presence_arbres" [class.bool-no]="!producer()!.presence_arbres">
+            {{ producer()!.presence_arbres ? 'Oui' : 'Non' }}
           </span>
         </div>
       </div>
@@ -171,27 +241,27 @@
       <div class="info-card">
         <div class="info-card-title"><mat-icon aria-hidden="true">thunderstorm</mat-icon> Risques climatiques</div>
         <div class="info-row">
-          <span class="info-label">Sécheresse</span>
-          <span class="info-value" [class.bool-yes]="producer()!.perteSec" [class.bool-no]="!producer()!.perteSec">
-            {{ producer()!.perteSec ? 'Oui' : 'Non' }}
+          <span class="info-label">Secheresse</span>
+          <span class="info-value" [class.bool-yes]="producer()!.perte_sec" [class.bool-no]="!producer()!.perte_sec">
+            {{ producer()!.perte_sec ? 'Oui' : 'Non' }}
           </span>
         </div>
         <div class="info-row">
           <span class="info-label">Inondations</span>
-          <span class="info-value" [class.bool-yes]="producer()!.perteInondation" [class.bool-no]="!producer()!.perteInondation">
-            {{ producer()!.perteInondation ? 'Oui' : 'Non' }}
+          <span class="info-value" [class.bool-yes]="producer()!.perte_inondation" [class.bool-no]="!producer()!.perte_inondation">
+            {{ producer()!.perte_inondation ? 'Oui' : 'Non' }}
           </span>
         </div>
         <div class="info-row">
           <span class="info-label">Vents violents</span>
-          <span class="info-value" [class.bool-yes]="producer()!.perteVents" [class.bool-no]="!producer()!.perteVents">
-            {{ producer()!.perteVents ? 'Oui' : 'Non' }}
+          <span class="info-value" [class.bool-yes]="producer()!.perte_vents" [class.bool-no]="!producer()!.perte_vents">
+            {{ producer()!.perte_vents ? 'Oui' : 'Non' }}
           </span>
         </div>
-        @if (producer()!.strategiesAdaptation) {
+        @if (producer()!.strategies_adaptation) {
           <div class="info-row">
-            <span class="info-label">Stratégie</span>
-            <span class="info-value info-value-sm">{{ producer()!.strategiesAdaptation }}</span>
+            <span class="info-label">Strategie</span>
+            <span class="info-value info-value-sm">{{ producer()!.strategies_adaptation }}</span>
           </div>
         }
       </div>
@@ -202,7 +272,7 @@
       <div class="info-card-title"><mat-icon aria-hidden="true">map</mat-icon> Champs ({{ producer()!.champs.length }})</div>
       @for (c of producer()!.champs; track c.localisation) {
         <div class="champ-chip">
-          <mat-icon aria-hidden="true">place</mat-icon> {{ c.localisation }} · {{ c.superficie }} ha · {{ c.typeRiziculture }} · {{ c.irrigation ? 'Irrigué' : 'Non irrigué' }} · {{ c.modeAcces }}
+          <mat-icon aria-hidden="true">place</mat-icon> {{ c.localisation }} - {{ c.superficie }} ha - {{ c.type_riziculture }} - {{ c.irrigation ? 'Irrigue' : 'Non irrigue' }} - {{ c.mode_acces }}
         </div>
       }
     </div>
@@ -210,7 +280,7 @@
     <!-- GPS -->
     @if (producer()!.latitude && producer()!.longitude) {
       <div class="info-card gps-card">
-        <div class="info-card-title"><mat-icon aria-hidden="true">gps_fixed</mat-icon> Géolocalisation</div>
+        <div class="info-card-title"><mat-icon aria-hidden="true">gps_fixed</mat-icon> Geolocalisation</div>
         <div class="info-row">
           <span class="info-label">Latitude</span>
           <span class="info-value">{{ producer()!.latitude }}</span>
@@ -223,16 +293,16 @@
     }
 
     <!-- Besoins -->
-    @if (producer()!.besoinsPrioritaires) {
+    @if (producer()!.besoins_prioritaires) {
       <div class="info-card">
         <div class="info-card-title"><mat-icon aria-hidden="true">lightbulb</mat-icon> Besoins prioritaires</div>
-        <p class="besoins-text">{{ producer()!.besoinsPrioritaires }}</p>
+        <p class="besoins-text">{{ producer()!.besoins_prioritaires }}</p>
       </div>
     }
   </div>
 } @else if (notFound()) {
   <div class="not-found">
     <p>Producteur introuvable.</p>
-    <a routerLink="/producteurs" class="btn btn-primary mt-3">← Retour à la liste</a>
+    <a routerLink="/producteurs" class="btn btn-primary mt-3">Retour a la liste</a>
   </div>
 }

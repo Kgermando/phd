@@ -1,12 +1,9 @@
-import { ChangeDetectionStrategy, Component, computed, OnInit, signal } from '@angular/core';
+﻿import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatIcon } from '@angular/material/icon';
 import { RouterLink } from '@angular/router';
-import { db } from '../../db/database';
-import { Producer } from '../../models/models';
-import { scoreProducer } from '../../utils/scoring';
-
-const ZONES = ['Toutes', 'Yalisenza', 'Monzamboli', 'Kwanza', 'Yandongi-Yamandika', 'Manga', 'Bilia', 'YALGBA'];
+import { Producer, ProducerStats } from '../../models/models';
+import { ProducersService } from '../../services/producers.service';
 
 @Component({
   selector: 'app-producers-list',
@@ -16,56 +13,136 @@ const ZONES = ['Toutes', 'Yalisenza', 'Monzamboli', 'Kwanza', 'Yandongi-Yamandik
   styleUrl: './producers-list.scss',
 })
 export class ProducersListComponent implements OnInit {
-  protected all = signal<(Producer & { score: number })[]>([]);
-  search = signal('');
-  zoneFilter = signal('Toutes');
-  eligFilter = signal('tous');
-  sexeFilter = signal('tous');
-  readonly zones = ZONES;
+  private producersService = inject(ProducersService);
 
-  filtered = computed(() => {
-    const q = this.search().toLowerCase();
-    return this.all().filter((p) => {
-      if (q && !p.nom.toLowerCase().includes(q) && !p.village.toLowerCase().includes(q)) return false;
-      if (this.zoneFilter() !== 'Toutes' && p.zone !== this.zoneFilter()) return false;
-      if (this.eligFilter() === 'eligible' && p.score < 60) return false;
-      if (this.eligFilter() === 'non' && p.score >= 60) return false;
-      if (this.sexeFilter() !== 'tous' && p.sexe !== this.sexeFilter()) return false;
-      return true;
-    });
+  all = signal<Producer[]>([]);
+  search = signal('');
+  villageFilter = signal('');
+  zoneFilter = signal('');
+  sexeFilter = signal('tous');
+  currentPage = signal(1);
+  totalPages = signal(1);
+  totalRecords = signal(0);
+  pageSize = signal(15);
+
+  loading = computed(() => this.producersService.loading());
+  error = computed(() => this.producersService.error());
+
+  /** Pending local producers not yet synced */
+  pending = computed(() => this.producersService.pendingSync());
+
+  /** Online producers filtered by sexe + zone */
+  private filteredOnline = computed(() => {
+    const sexe = this.sexeFilter();
+    const zone = this.zoneFilter();
+    return this.all().filter(p =>
+      (sexe === 'tous' || p.sexe === sexe) &&
+      (!zone || p.zone === zone)
+    );
   });
 
-  eligibleCount = computed(() => this.all().filter(p => p.score >= 60).length);
-  femmesCount = computed(() => this.all().filter(p => p.sexe === 'femme').length);
+  /** Pending producers filtered by sexe + zone (local-only, prefix list) */
+  private filteredPending = computed(() => {
+    const sexe = this.sexeFilter();
+    const zone = this.zoneFilter();
+    return this.pending().filter(p =>
+      (sexe === 'tous' || p.sexe === sexe) &&
+      (!zone || p.zone === zone)
+    );
+  });
+
+  /** Combined: pending rows first (visually distinct), then server rows */
+  filtered = computed(() => [...this.filteredPending(), ...this.filteredOnline()]);
+
+  private stats = signal<ProducerStats | null>(null);
+
+  totalCount = computed(() => this.stats()?.Total ?? this.totalRecords());
+  eligibleCount = computed(() => this.stats()?.Eligible ?? 0);
+  nonEligibleCount = computed(() => this.stats()?.NonEligible ?? 0);
+  femmesCount = computed(() => this.stats()?.Femmes ?? 0);
+  pendingCount = computed(() => this.pending().length);
 
   async ngOnInit(): Promise<void> {
-    await this.load();
+    // Try to push any previously saved offline producers
+    if (navigator.onLine) {
+      await this.producersService.syncPending();
+    }
+    await Promise.all([this.load(), this.loadStats()]);
+  }
+
+  private async loadStats(): Promise<void> {
+    const stats = await this.producersService.getStats();
+    if (stats) this.stats.set(stats);
   }
 
   private async load(): Promise<void> {
-    const raw = await db.producers.toArray();
-    this.all.set(raw.map((p) => ({ ...p, score: scoreProducer(p).total })));
+    const result = await this.producersService.getPaginatedProducers(
+      this.currentPage(),
+      this.pageSize(),
+      this.search(),
+      this.villageFilter(),
+    );
+    this.all.set(result.data);
+    this.totalPages.set(result.total_pages);
+    this.totalRecords.set(result.total);
+  }
+
+  async onSearch(): Promise<void> {
+    this.currentPage.set(1);
+    await this.load();
+  }
+
+  async nextPage(): Promise<void> {
+    if (this.currentPage() < this.totalPages()) {
+      this.currentPage.update(p => p + 1);
+      await this.load();
+    }
+  }
+
+  async previousPage(): Promise<void> {
+    if (this.currentPage() > 1) {
+      this.currentPage.update(p => p - 1);
+      await this.load();
+    }
+  }
+
+  getScore(p: Producer): number {
+    return p.scores?.[0]?.score_total ?? 0;
+  }
+
+  isEligible(p: Producer): boolean {
+    return p.scores?.[0]?.recommande ?? false;
   }
 
   totalha(p: Producer): number {
-    return p.champs.reduce((s, c) => s + c.superficie, 0);
+    return (p.champs ?? []).reduce((s, c) => s + c.superficie, 0);
   }
 
-  async delete(p: Producer & { score: number }): Promise<void> {
-    if (!confirm(`Supprimer ${p.nom} ? Cette action est irréversible.`)) return;
-    await db.producers.delete(p.id!);
-    await this.load();
+  async delete(p: Producer): Promise<void> {
+    if (!confirm(`Supprimer ${p.nom} ? Cette action est irrÃ©versible.`)) return;
+    if (p._pending) {
+      // Remove from local storage only
+      this.producersService.removePending(p.uuid!);
+    } else if (p.uuid) {
+      await this.producersService.deleteProducer(p.uuid);
+      await this.load();
+    }
   }
 
   resetFilters(): void {
     this.search.set('');
-    this.zoneFilter.set('Toutes');
-    this.eligFilter.set('tous');
+    this.villageFilter.set('');
+    this.zoneFilter.set('');
     this.sexeFilter.set('tous');
+    this.currentPage.set(1);
+    this.load();
   }
 
   initials(nom: string): string {
-    const parts = nom.trim().split(' ');
-    return (parts[0][0] + (parts[1]?.[0] ?? '')).toUpperCase();
+    return nom
+      .split(' ')
+      .slice(0, 2)
+      .map(w => w.charAt(0).toUpperCase())
+      .join('');
   }
 }

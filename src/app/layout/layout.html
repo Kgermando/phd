@@ -1,8 +1,7 @@
 <div class="app-shell">
   <aside class="sidebar" [class.open]="menuOpen()" [attr.aria-hidden]="!menuOpen() || null">
     <div class="sidebar-logo">
-      <mat-icon aria-hidden="true">grass</mat-icon>
-      <h1>RizSuivi</h1>
+      <img src="images/logo.png" alt="Logo de PHD" class="logo-image" />
     </div>
     <nav aria-label="Navigation principale">
       <a routerLink="/dashboard" routerLinkActive="active" (click)="closeMenu()">
@@ -14,11 +13,14 @@
       <a routerLink="/carte" routerLinkActive="active" (click)="closeMenu()">
         <mat-icon aria-hidden="true">map</mat-icon> Carte
       </a>
+      <a routerLink="/utilisateurs" routerLinkActive="active" (click)="closeMenu()">
+        <mat-icon aria-hidden="true">people</mat-icon> Utilisateurs
+      </a>
     </nav>
     <div class="sidebar-footer">
       <div class="user-info">Connecté en tant que</div>
-      <div class="user-name">{{ auth.currentUser()?.fullName }}</div>
-      <div class="user-info">{{ auth.currentUser()?.role === 'admin' ? 'Administrateur' : 'Agent recenseur' }}</div>
+      <div class="user-name">{{ auth.currentUser()?.fullname }}</div>
+      <div class="user-info">{{ auth.currentUser()?.role === 'Admin' ? 'Administrateur' : auth.currentUser()?.role }}</div>
       <button class="btn-logout mt-2" (click)="logout()"><mat-icon aria-hidden="true">logout</mat-icon> Se déconnecter</button>
     </div>
   </aside>
@@ -29,20 +31,35 @@
       <button class="menu-toggle" (click)="toggleMenu()" aria-label="Ouvrir le menu"><mat-icon>menu</mat-icon></button>
       <div class="topbar-left">
         <div class="topbar-project">
-          <span class="topbar-title">Projet Rizicole – Mongala</span>
-          <span class="topbar-sub">Recensement des petits producteurs</span>
+          <span class="topbar-title">Plantation Huilerie du Congo </span>
+          <span class="topbar-sub">Recensement des producteurs</span>
         </div>
       </div>
       <div class="topbar-right">
         <div class="topbar-divider" aria-hidden="true"></div>
-        <div class="topbar-user">
-          <div class="user-avatar" aria-hidden="true">
-            {{ auth.currentUser()?.fullName?.charAt(0)?.toUpperCase() }}
-          </div>
-          <div class="user-details">
-            <span class="user-name">{{ auth.currentUser()?.fullName }}</span>
-            <span class="user-role">{{ auth.currentUser()?.role === 'admin' ? 'Administrateur' : 'Agent' }}</span>
-          </div>
+        <div class="topbar-user-wrapper">
+          <button class="topbar-user" (click)="toggleProfileDropdown()" aria-label="Ouvrir le menu profil" [attr.aria-expanded]="profileDropdownOpen()">
+            <div class="user-avatar" aria-hidden="true">
+              {{ auth.currentUser()?.fullname?.charAt(0)?.toUpperCase() }}
+            </div>
+            <div class="user-details">
+              <span class="user-name">{{ auth.currentUser()?.fullname }}</span>
+              <span class="user-role">{{ auth.currentUser()?.role === 'Admin' ? 'Administrateur' : auth.currentUser()?.role }}</span>
+            </div>
+            <mat-icon class="dropdown-icon" aria-hidden="true">expand_more</mat-icon>
+          </button>
+          @if (profileDropdownOpen()) {
+            <div class="profile-dropdown" role="menu">
+              <a routerLink="/profil" class="dropdown-item" role="menuitem" (click)="closeProfileDropdown()">
+                <mat-icon>person</mat-icon>
+                Profil
+              </a>
+              <button class="dropdown-item" role="menuitem" (click)="logout(); closeProfileDropdown()">
+                <mat-icon>logout</mat-icon>
+                Se déconnecter
+              </button>
+            </div>
+          }
         </div>
       </div>
     </header>
