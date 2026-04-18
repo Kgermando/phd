@@ -1,12 +1,13 @@
-import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, OnInit, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { DecimalPipe } from '@angular/common';
 import { FormArray, FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { MatIcon } from '@angular/material/icon';
-import { map } from 'rxjs';
+import { map, startWith } from 'rxjs';
 import { ProducersService } from '../../services/producers.service';
 import { Producer } from '../../models/models';
+import { NOMS_PROVINCES, getTerritoiresByProvince } from '../../utils/rdc-geo';
 
 @Component({
   selector: 'app-producer-form',
@@ -31,6 +32,8 @@ export class ProducerFormComponent implements OnInit {
     'Yalgba',
   ];
 
+  readonly provinces = NOMS_PROVINCES;
+
   isEdit = signal(false);
   saving = signal(false);
   saved = signal(false);
@@ -45,6 +48,8 @@ export class ProducerFormComponent implements OnInit {
     sexe: ['homme'],
     date_naissance: [''],
     telephone: [''],
+    province: ['', Validators.required],
+    territoire: [''],
     village: ['', Validators.required],
     zone: ['', Validators.required],
     groupement: [''],
@@ -86,6 +91,24 @@ export class ProducerFormComponent implements OnInit {
     this.form.statusChanges.pipe(map(s => s !== 'VALID')),
     { initialValue: true },
   );
+
+  private provinceValue = toSignal(
+    this.form.get('province')!.valueChanges.pipe(
+      startWith(this.form.get('province')!.value as string),
+    ),
+  );
+
+  territoires = computed(() => getTerritoiresByProvince(this.provinceValue() ?? ''));
+
+  constructor() {
+    effect(() => {
+      const terrs = this.territoires();
+      const current = this.form.get('territoire')?.value as string;
+      if (current && !terrs.includes(current)) {
+        this.form.get('territoire')?.setValue('', { emitEvent: false });
+      }
+    });
+  }
 
   get f() { return this.form.controls; }
   get champsArray(): FormArray { return this.form.get('champs') as FormArray; }

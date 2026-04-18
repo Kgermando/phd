@@ -60,6 +60,29 @@
           </fieldset>
         </div>
         <div class="form-group">
+          <label for="province">Province *</label>
+          <select id="province" class="form-control" formControlName="province">
+            <option value="" disabled>-- Choisir une province --</option>
+            @for (p of provinces; track p) {
+              <option [value]="p">{{ p }}</option>
+            }
+          </select>
+          @if (f['province'].invalid && f['province'].touched) {
+            <div class="error-text">Champ obligatoire</div>
+          }
+        </div>
+        <div class="form-group">
+          <label for="territoire">Territoire</label>
+          <select id="territoire" class="form-control" formControlName="territoire">
+            <option value="">
+              {{ territoires().length === 0 ? "Sélectionnez d'abord une province" : "-- Choisir un territoire --" }}
+            </option>
+            @for (t of territoires(); track t) {
+              <option [value]="t">{{ t }}</option>
+            }
+          </select>
+        </div>
+        <div class="form-group">
           <label for="village">Village / Localité *</label>
           <input id="village" class="form-control" formControlName="village" type="text" />
         </div>
