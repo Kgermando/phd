@@ -102,6 +102,8 @@ export class ProducersService {
     limit = 15,
     search = '',
     village = '',
+    province = '',
+    territoire = '',
   ): Promise<{ data: Producer[]; total: number; total_pages: number; current_page: number }> {
     this.loading.set(true);
     this.error.set(null);
@@ -112,6 +114,8 @@ export class ProducersService {
       };
       if (search) params['search'] = search;
       if (village) params['village'] = village;
+      if (province) params['province'] = province;
+      if (territoire) params['territoire'] = territoire;
       const query = new URLSearchParams(params).toString();
       const response = await firstValueFrom(
         this.http.get<{ status: string; total: number; page: number; limit: number; producers: Producer[] }>(

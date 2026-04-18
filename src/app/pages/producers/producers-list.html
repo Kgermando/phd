@@ -81,6 +81,24 @@
       </select>
     </div>
     <div class="filter-group">
+      <label class="filter-label" for="f-province">Province</label>
+      <select id="f-province" class="form-control form-control-sm" [ngModel]="provinceFilter()" (ngModelChange)="provinceFilter.set($event); territoireFilter.set('')">
+        <option value="">Toutes les provinces</option>
+        @for (p of provinces; track p) {
+          <option [value]="p">{{ p }}</option>
+        }
+      </select>
+    </div>
+    <div class="filter-group">
+      <label class="filter-label" for="f-territoire">Territoire</label>
+      <select id="f-territoire" class="form-control form-control-sm" [ngModel]="territoireFilter()" (ngModelChange)="territoireFilter.set($event)" [attr.disabled]="territoiresOptions().length === 0 ? true : null">
+        <option value="">{{ territoiresOptions().length === 0 ? "Choisir une province" : "Tous les territoires" }}</option>
+        @for (t of territoiresOptions(); track t) {
+          <option [value]="t">{{ t }}</option>
+        }
+      </select>
+    </div>
+    <div class="filter-group">
       <label class="filter-label" for="f-sexe">Sexe</label>
       <select id="f-sexe" class="form-control form-control-sm" [ngModel]="sexeFilter()" (ngModelChange)="sexeFilter.set($event)">
         <option value="tous">Tous</option>

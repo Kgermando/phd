@@ -3,11 +3,19 @@ import { Router } from '@angular/router';
 import { db, LocalSession } from '../../db/database';
 import { User, UserResponse, LoginRequest, SyncStatus } from '../../models/models';
 import { AuthApiService } from './auth-api.service';
+import { environment } from '../../../environments/environment';
+
+const SESSION_DURATION_MS = environment.auth.tokenExpiresIn;
+const TOKEN_KEY = environment.auth.tokenStorageKey;
+const USER_KEY = environment.auth.userStorageKey;
+const LOGIN_TIME_KEY = `${TOKEN_KEY}_login_time`;
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly router = inject(Router);
   private readonly authApi = inject(AuthApiService);
+
+  private expiryTimer: ReturnType<typeof setTimeout> | null = null;
 
   // Signaux pour l'état d'authentification
   currentUser = signal<UserResponse | null>(null);
@@ -48,6 +56,51 @@ export class AuthService {
   }
 
   /**
+   * Détermine si la session enregistrée a dépassé 24h
+   */
+  private isSessionExpired(loginTime: Date): boolean {
+    return Date.now() - loginTime.getTime() > SESSION_DURATION_MS;
+  }
+
+  /**
+   * Démarre un minuteur qui force la déconnexion à l'expiration exacte de la session.
+   * Fonctionne même hors ligne.
+   */
+  private startExpiryWatcher(loginTime: Date): void {
+    if (this.expiryTimer !== null) {
+      clearTimeout(this.expiryTimer);
+    }
+    const remaining = SESSION_DURATION_MS - (Date.now() - loginTime.getTime());
+    if (remaining <= 0) {
+      this.logout();
+      return;
+    }
+    this.expiryTimer = setTimeout(() => this.logout(), remaining);
+  }
+
+  /**
+   * Hash le mot de passe via PBKDF2 (Web Crypto) avec l'UUID comme sel.
+   */
+  private async hashPassword(password: string, salt: string): Promise<string> {
+    const enc = new TextEncoder();
+    const keyMaterial = await crypto.subtle.importKey(
+      'raw',
+      enc.encode(password),
+      'PBKDF2',
+      false,
+      ['deriveBits']
+    );
+    const bits = await crypto.subtle.deriveBits(
+      { name: 'PBKDF2', hash: 'SHA-256', salt: enc.encode(salt), iterations: 100_000 },
+      keyMaterial,
+      256
+    );
+    return Array.from(new Uint8Array(bits))
+      .map((b) => b.toString(16).padStart(2, '0'))
+      .join('');
+  }
+
+  /**
    * Connexion en ligne (avec le backend Go)
    */
   async loginOnline(loginData: LoginRequest): Promise<{ success: boolean; message: string }> {
@@ -58,17 +111,25 @@ export class AuthService {
         // Sauvegarder le token
         const token = response.data;
         this.currentToken.set(token);
-        localStorage.setItem('auth_token', token);
+        localStorage.setItem(TOKEN_KEY, token);
 
         // Récupérer les infos utilisateur
         const userResponse = await this.authApi.getAuthenticatedUser(token).toPromise();
 
         if (userResponse) {
+          const loginTime = new Date();
           this.currentUser.set(userResponse);
-          localStorage.setItem('current_user', JSON.stringify(userResponse));
+          localStorage.setItem(USER_KEY, JSON.stringify(userResponse));
+          localStorage.setItem(LOGIN_TIME_KEY, loginTime.toISOString());
+
+          // Hash du mot de passe pour l'accès offline
+          const passwordHash = await this.hashPassword(loginData.password, userResponse.uuid);
 
           // Sauvegarder dans la DB locale pour offline
-          await this.saveUserToLocalSession(userResponse, token);
+          await this.saveUserToLocalSession(userResponse, token, loginTime, passwordHash);
+
+          // Démarrer le minuteur d'expiration
+          this.startExpiryWatcher(loginTime);
 
           return { success: true, message: 'Connexion réussie' };
         }
@@ -96,20 +157,41 @@ export class AuthService {
         return { success: false, message: 'Utilisateur non trouvé. Veuillez vous connecter une première fois en ligne.' };
       }
 
-      // Vérifier le mot de passe
-      if (user.isActive && this.verifyOfflinePassword(password, user.uuid)) {
-        // Retrouver les infos complètes depuis le localStorage
-        const rawUser = localStorage.getItem(`user_cache_${user.uuid}`);
-        const fullUser: UserResponse | null = rawUser ? JSON.parse(rawUser) : null;
-
-        if (fullUser) {
-          this.currentUser.set(fullUser as UserResponse);
-          this.currentToken.set(user.token || '');
-          return { success: true, message: 'Connexion hors ligne réussie' };
-        }
+      // Vérifier l'expiration de la session (24h)
+      if (!user.loginTime || this.isSessionExpired(new Date(user.loginTime))) {
+        return {
+          success: false,
+          message: 'Votre session a expiré (24h). Veuillez vous reconnecter en ligne.',
+        };
       }
 
-      return { success: false, message: 'Identifiant ou mot de passe incorrect' };
+      // Vérifier le mot de passe via hash PBKDF2
+      if (!user.passwordHash) {
+        return { success: false, message: 'Données offline incomplètes. Veuillez vous connecter en ligne.' };
+      }
+
+      const inputHash = await this.hashPassword(password, user.uuid);
+      if (inputHash !== user.passwordHash) {
+        return { success: false, message: 'Identifiant ou mot de passe incorrect' };
+      }
+
+      if (!user.isActive) {
+        return { success: false, message: 'Compte inactif' };
+      }
+
+      // Retrouver les infos complètes depuis le localStorage
+      const rawUser = localStorage.getItem(`user_cache_${user.uuid}`);
+      const fullUser: UserResponse | null = rawUser ? JSON.parse(rawUser) : null;
+
+      if (fullUser) {
+        const loginTime = new Date(user.loginTime);
+        this.currentUser.set(fullUser as UserResponse);
+        this.currentToken.set(user.token || '');
+        this.startExpiryWatcher(loginTime);
+        return { success: true, message: 'Connexion hors ligne réussie' };
+      }
+
+      return { success: false, message: 'Données utilisateur introuvables. Veuillez vous connecter en ligne.' };
     } catch (error: any) {
       return { success: false, message: error.message || 'Erreur de connexion hors ligne' };
     }
@@ -241,7 +323,7 @@ export class AuthService {
 
       if (response?.data) {
         this.currentUser.set(response.data as UserResponse);
-        localStorage.setItem('current_user', JSON.stringify(response.data));
+        localStorage.setItem(USER_KEY, JSON.stringify(response.data));
         return { success: true, message: response.message, user: response.data };
       }
 
@@ -255,6 +337,12 @@ export class AuthService {
    * Déconnexion
    */
   async logout(): Promise<void> {
+    // Annuler le minuteur d'expiration
+    if (this.expiryTimer !== null) {
+      clearTimeout(this.expiryTimer);
+      this.expiryTimer = null;
+    }
+
     try {
       if (this.isOnline() && this.currentToken()) {
         await this.authApi.logout().toPromise();
@@ -264,8 +352,9 @@ export class AuthService {
     } finally {
       this.currentUser.set(null);
       this.currentToken.set(null);
-      localStorage.removeItem('auth_token');
-      localStorage.removeItem('current_user');
+      localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(USER_KEY);
+      localStorage.removeItem(LOGIN_TIME_KEY);
       this.router.navigate(['/auth/login']);
     }
   }
@@ -275,25 +364,43 @@ export class AuthService {
    */
   async restoreSession(): Promise<void> {
     try {
-      const token = localStorage.getItem('auth_token');
-      const userJson = localStorage.getItem('current_user');
+      const token = localStorage.getItem(TOKEN_KEY);
+      const userJson = localStorage.getItem(USER_KEY);
+      const loginTimeRaw = localStorage.getItem(LOGIN_TIME_KEY);
 
-      if (token && userJson) {
-        this.currentToken.set(token);
-        const user = JSON.parse(userJson) as UserResponse;
-        this.currentUser.set(user);
+      if (!token || !userJson || !loginTimeRaw) {
+        return;
+      }
 
-        // Si en ligne, valider le token avec le backend
-        if (this.isOnline()) {
-          try {
-            const validatedUser = await this.authApi.getAuthenticatedUser(token).toPromise();
-            if (validatedUser) {
-              this.currentUser.set(validatedUser);
-              localStorage.setItem('current_user', JSON.stringify(validatedUser));
-            }
-          } catch (error) {
-            console.warn('Token invalide, utilisation de la session locale');
+      const loginTime = new Date(loginTimeRaw);
+
+      // Forcer la déconnexion si la session a expiré (24h)
+      if (this.isSessionExpired(loginTime)) {
+        this.currentUser.set(null);
+        this.currentToken.set(null);
+        localStorage.removeItem(TOKEN_KEY);
+        localStorage.removeItem(USER_KEY);
+        localStorage.removeItem(LOGIN_TIME_KEY);
+        return;
+      }
+
+      this.currentToken.set(token);
+      const user = JSON.parse(userJson) as UserResponse;
+      this.currentUser.set(user);
+
+      // Démarrer le minuteur pour l'expiration restante
+      this.startExpiryWatcher(loginTime);
+
+      // Si en ligne, valider le token avec le backend
+      if (this.isOnline()) {
+        try {
+          const validatedUser = await this.authApi.getAuthenticatedUser(token).toPromise();
+          if (validatedUser) {
+            this.currentUser.set(validatedUser);
+            localStorage.setItem(USER_KEY, JSON.stringify(validatedUser));
           }
+        } catch (error) {
+          console.warn('Token invalide, utilisation de la session locale');
         }
       }
     } catch (error) {
@@ -304,7 +411,12 @@ export class AuthService {
   /**
    * Sauvegarder l'utilisateur dans la DB locale pour accès offline
    */
-  private async saveUserToLocalSession(user: UserResponse, token: string): Promise<void> {
+  private async saveUserToLocalSession(
+    user: UserResponse,
+    token: string,
+    loginTime: Date,
+    passwordHash: string
+  ): Promise<void> {
     try {
       const session: LocalSession = {
         uuid: user.uuid,
@@ -315,7 +427,9 @@ export class AuthService {
         permission: user.permission,
         status: user.status,
         token,
-        lastLoginTime: new Date(),
+        lastLoginTime: loginTime,
+        loginTime,
+        passwordHash,
         isActive: true,
       };
 
@@ -325,15 +439,6 @@ export class AuthService {
     } catch (error) {
       console.error('Erreur lors de la sauvegarde de la session locale:', error);
     }
-  }
-
-  /**
-   * Vérifier le mot de passe en mode offline
-   */
-  private verifyOfflinePassword(inputPassword: string, uuid: string): boolean {
-    // Implémentation simple - À remplacer par bcrypt en production
-    const storedPassword = sessionStorage.getItem(`offline_pwd_${uuid}`);
-    return storedPassword === inputPassword;
   }
 
   /**

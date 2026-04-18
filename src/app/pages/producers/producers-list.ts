@@ -5,6 +5,7 @@ import { RouterLink } from '@angular/router';
 import { Producer, ProducerStats } from '../../models/models';
 import { ProducersService } from '../../services/producers.service';
 import { AuthService } from '../../auth/services/auth.service';
+import { NOMS_PROVINCES, getTerritoiresByProvince } from '../../utils/rdc-geo';
 
 @Component({
   selector: 'app-producers-list',
@@ -22,6 +23,11 @@ export class ProducersListComponent implements OnInit {
   villageFilter = signal('');
   zoneFilter = signal('');
   sexeFilter = signal('tous');
+  provinceFilter = signal('');
+  territoireFilter = signal('');
+
+  readonly provinces = NOMS_PROVINCES;
+  territoiresOptions = computed(() => getTerritoiresByProvince(this.provinceFilter()));
   currentPage = signal(1);
   totalPages = signal(1);
   totalRecords = signal(0);
@@ -33,23 +39,31 @@ export class ProducersListComponent implements OnInit {
   /** Pending local producers not yet synced */
   pending = computed(() => this.producersService.pendingSync());
 
-  /** Online producers filtered by sexe + zone */
+  /** Online producers filtered by sexe + zone + province + territoire */
   private filteredOnline = computed(() => {
     const sexe = this.sexeFilter();
     const zone = this.zoneFilter();
+    const province = this.provinceFilter();
+    const territoire = this.territoireFilter();
     return this.all().filter(p =>
       (sexe === 'tous' || p.sexe === sexe) &&
-      (!zone || p.zone === zone)
+      (!zone || p.zone === zone) &&
+      (!province || p.province === province) &&
+      (!territoire || p.territoire === territoire)
     );
   });
 
-  /** Pending producers filtered by sexe + zone (local-only, prefix list) */
+  /** Pending producers filtered by sexe + zone + province + territoire (local-only, prefix list) */
   private filteredPending = computed(() => {
     const sexe = this.sexeFilter();
     const zone = this.zoneFilter();
+    const province = this.provinceFilter();
+    const territoire = this.territoireFilter();
     return this.pending().filter(p =>
       (sexe === 'tous' || p.sexe === sexe) &&
-      (!zone || p.zone === zone)
+      (!zone || p.zone === zone) &&
+      (!province || p.province === province) &&
+      (!territoire || p.territoire === territoire)
     );
   });
 
@@ -83,6 +97,8 @@ export class ProducersListComponent implements OnInit {
       this.pageSize(),
       this.search(),
       this.villageFilter(),
+      this.provinceFilter(),
+      this.territoireFilter(),
     );
     this.all.set(result.data);
     this.totalPages.set(result.total_pages);
@@ -136,6 +152,8 @@ export class ProducersListComponent implements OnInit {
     this.villageFilter.set('');
     this.zoneFilter.set('');
     this.sexeFilter.set('tous');
+    this.provinceFilter.set('');
+    this.territoireFilter.set('');
     this.currentPage.set(1);
     this.load();
   }

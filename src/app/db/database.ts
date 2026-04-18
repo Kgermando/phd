@@ -27,6 +27,10 @@ export interface LocalSession {
   status: boolean;
   token?: string;
   lastLoginTime: Date;
+  /** Timestamp exact de connexion pour le calcul de l'expiration 24h */
+  loginTime: Date;
+  /** Hash PBKDF2 du mot de passe pour la vérification offline */
+  passwordHash?: string;
   isActive: boolean;
 }
 
@@ -89,6 +93,15 @@ export class AppDatabase extends Dexie {
           console.warn('Error clearing tables during upgrade:', e);
         }
       });
+
+    // Version 4 - added loginTime and passwordHash to localSessions
+    this.version(4).stores({
+      producers: '&uuid, zone, village, agent_recenseur_uuid',
+      champs: '&uuid, producer_uuid',
+      offlineChanges: '++id, entity, entityUUID, synced, timestamp',
+      localSessions: '++id, &uuid, lastLoginTime, loginTime, isActive',
+      syncedProducers: '++id, &producer_uuid, lastSyncedAt',
+    });
   }
 
   /**
