@@ -97,14 +97,6 @@
   </div>
 </div>
 
-<!-- Result count -->
-<div class="result-bar" aria-live="polite">
-  <span class="result-count">{{ filtered().length }} producteur{{ filtered().length > 1 ? 's' : '' }} affiché{{ filtered().length > 1 ? 's' : '' }}</span>
-  @if (totalRecords() > 0) {
-    <span class="result-filter-msg">sur {{ totalRecords() }} au total</span>
-  }
-</div>
-
 <!-- Table (desktop) -->
 <div class="table-card">
   @if (filtered().length > 0) {

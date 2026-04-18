@@ -403,32 +403,46 @@
 }
 
 /* ── Responsive ── */
+
+// ── Tablette paysage (≤ 1024px) ─────────────────────────────
+@media (max-width: 1024px) {
+  .stats-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .grid-2 {
+    gap: 16px;
+  }
+}
+
+// ── Tablette portrait (≤ 768px) ──────────────────────────────
 @media (max-width: 768px) {
   .page-header {
-    margin-bottom: 20px;
+    margin-bottom: 16px;
+    gap: 8px;
 
-    h2 { font-size: 20px; }
+    h2 { font-size: 18px; }
 
     .subtitle {
       font-size: 12px;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      max-width: 260px;
+      max-width: 220px;
     }
   }
 
-  // Show icon-only export button on tablet
+  // Bouton export : icône seule
   .export-label { display: none; }
 
   .stats-grid {
     grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
-    margin-bottom: 20px;
+    gap: 10px;
+    margin-bottom: 14px;
   }
 
   .stat-card {
-    padding: 14px;
+    padding: 14px 12px;
   }
 
   .stat-value {
@@ -437,13 +451,13 @@
 
   .section-title {
     font-size: 14px;
-    margin-bottom: 10px;
+    margin-bottom: 8px;
   }
 
   .grid-2 {
     grid-template-columns: 1fr;
-    gap: 16px;
-    margin-bottom: 16px;
+    gap: 12px;
+    margin-bottom: 12px;
   }
 
   .zone-name {
@@ -456,41 +470,75 @@
     align-items: flex-start;
   }
 
+  // Table : scroll horizontal, largeur min forcée pour éviter l'écrasement
   .agent-table-wrap {
     overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .agent-table {
+    min-width: 560px;
+    font-size: 13px;
+
+    th, td { padding: 8px 10px; }
+  }
+
+  .recent-meta {
+    font-size: 11px;
   }
 }
 
+// ── Mobile (≤ 480px) ─────────────────────────────────────────
 @media (max-width: 480px) {
   .page-header {
+    margin-bottom: 10px;
+
+    h2 { font-size: 15px; }
     .subtitle { display: none; }
   }
 
   .stats-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
+    grid-template-columns: 1fr;
+    gap: 8px;
+    margin-bottom: 10px;
+    max-width: 360px;
+    margin-inline: auto;
   }
 
   .stat-card {
-    padding: 12px;
+    padding: 10px 8px;
   }
 
   .stat-value {
-    font-size: 22px;
+    font-size: 20px;
   }
 
   .stat-label {
-    font-size: 12px;
+    font-size: 11px;
+    margin-top: 4px;
+  }
+
+  .section-title {
+    font-size: 13px;
+    margin-bottom: 6px;
+  }
+
+  .grid-2 {
+    gap: 8px;
+    margin-bottom: 8px;
   }
 
   .recent-header {
     flex-direction: column;
     align-items: flex-start;
-    gap: 8px;
+    gap: 6px;
   }
 
-  // Hide less critical agent table columns on small phones
+  // Table : on masque les colonnes moins critiques
   .agent-table {
+    font-size: 12px;
+
+    // Masque : Non élig. + Score moy.
     th:nth-child(5),
     td:nth-child(5),
     th:nth-child(6),
@@ -500,12 +548,38 @@
   }
 
   .rate-cell {
-    min-width: 90px;
-    gap: 5px;
+    min-width: 80px;
+    gap: 4px;
   }
 
   .rate-label {
-    min-width: 28px;
+    min-width: 26px;
+    font-size: 11px;
+  }
+
+  .badge {
+    font-size: 11px;
+    padding: 2px 7px;
+  }
+}
+
+// ── Petit téléphone (≤ 360px) ─────────────────────────────────
+@media (max-width: 360px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .stat-card {
+    padding: 8px 6px;
+  }
+
+  .stat-value {
+    font-size: 18px;
+  }
+
+  .stat-label {
+    font-size: 10px;
   }
 }
 

@@ -1,114 +1,137 @@
 <div class="login-page">
-  <div class="login-logo">
-    <img
-      src="/images/logo.png"
-      alt="Logo PHD - Plantations Huileries du Congo"
-      width="160"
-      height="160"
-      class="login-logo-img"
-    /> 
-    <h1>PHD</h1>
-    <p>Plantations Huileries du Congo</p>
-  </div>
-
-  <!-- Connection Status Indicator -->
-  <div class="connection-indicator" [class.online]="isOnline()" [class.offline]="!isOnline()">
-    <mat-icon>{{ isOnline() ? 'cloud_done' : 'cloud_off' }}</mat-icon>
-    <span>{{ connectionStatus }}</span>
-  </div>
-
-  <div class="login-card" role="main">
- 
-    <!-- Error Message -->
-    @if (error()) {
-      <div class="error-msg" role="alert" aria-live="polite">
-        <mat-icon aria-hidden="true">error</mat-icon>
-        {{ error() }}
+  <div class="login-shell">
+    <section class="login-brand" aria-label="Présentation de la plateforme">
+      <div class="login-logo">
+        <img
+          src="/images/logo.png"
+          alt="Logo PHD - Plantations Huileries du Congo"
+          width="160"
+          height="160"
+          class="login-logo-img"
+        />
       </div>
-    }
 
-    <!-- Offline Warning -->
-    @if (!isOnline()) {
-      <div class="offline-warning" role="status" aria-live="polite">
-        <mat-icon aria-hidden="true">warning</mat-icon>
-        <span>Mode hors ligne - Utilisez vos identifiants précédents</span>
+      <div class="brand-copy">
+        <p class="brand-kicker">Plateforme sécurisée</p>
+        <h1>Plantations Huileries du Congo</h1>
+        <p class="brand-text">
+          Connectez-vous pour accéder à vos opérations, suivre les producteurs et synchroniser les
+          données de terrain.
+        </p>
       </div>
-    }
+    </section>
 
-    <!-- Login Form -->
-    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" novalidate>
-      <div class="form-group">
-        <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Email ou Téléphone</mat-label>
-          <input
-            matInput
-            formControlName="identifier"
-            type="text"
-            autocomplete="email"
-            placeholder="votre.email@exemple.com ou +243..."
-            [attr.aria-invalid]="loginForm.get('identifier')?.invalid && loginForm.get('identifier')?.touched"
-            aria-describedby="identifier-error"
-          />
-          @if (loginForm.get('identifier')?.hasError('required') && loginForm.get('identifier')?.touched) {
-            <mat-error id="identifier-error">L'email ou le téléphone est requis</mat-error>
+    <div class="login-card" role="main" aria-labelledby="login-title">
+      <div class="card-header">
+        <p class="card-kicker">Authentification</p>
+        <h2 id="login-title">Connexion</h2>
+        <p class="card-text">Entrez vos identifiants pour ouvrir votre espace de travail.</p>
+      </div>
+
+      @if (error()) {
+        <div class="error-msg" role="alert" aria-live="polite">
+          <mat-icon aria-hidden="true">error</mat-icon>
+          <span>{{ error() }}</span>
+        </div>
+      }
+
+      @if (!isOnline()) {
+        <div class="offline-warning" role="status" aria-live="polite">
+          <mat-icon aria-hidden="true">warning</mat-icon>
+          <span>Mode hors ligne actif. Utilisez vos identifiants précédemment enregistrés.</span>
+        </div>
+      }
+
+      <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" novalidate class="login-form">
+        <div class="form-group">
+          <div class="field-meta">
+            <span class="field-title">Identifiant</span>
+            <span class="field-help">Email professionnel ou numéro de téléphone</span>
+          </div>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Email ou Téléphone</mat-label>
+            <input
+              matInput
+              formControlName="identifier"
+              type="text"
+              autocomplete="email"
+              placeholder="votre.email@exemple.com ou +243..."
+              [attr.aria-invalid]="loginForm.get('identifier')?.invalid && loginForm.get('identifier')?.touched"
+              aria-describedby="identifier-error"
+            />
+            <mat-icon matPrefix aria-hidden="true">person</mat-icon>
+            @if (loginForm.get('identifier')?.hasError('required') && loginForm.get('identifier')?.touched) {
+              <mat-error id="identifier-error">L'email ou le téléphone est requis</mat-error>
+            }
+          </mat-form-field>
+        </div>
+
+        <div class="form-group">
+          <div class="field-meta">
+            <span class="field-title">Mot de passe</span>
+            <span class="field-help">Minimum 6 caractères</span>
+          </div>
+
+          <mat-form-field appearance="outline" class="full-width password-field">
+            <mat-label>Mot de passe</mat-label>
+            <input
+              matInput
+              formControlName="password"
+              [type]="showPassword() ? 'text' : 'password'"
+              autocomplete="current-password"
+              placeholder="••••••••"
+              [attr.aria-invalid]="loginForm.get('password')?.invalid && loginForm.get('password')?.touched"
+              aria-describedby="password-error"
+            />
+            <mat-icon matPrefix aria-hidden="true">lock</mat-icon>
+            <button
+              mat-icon-button
+              matSuffix
+              type="button"
+              (click)="togglePasswordVisibility()"
+              [attr.aria-label]="showPassword() ? 'Masquer le mot de passe' : 'Afficher le mot de passe'"
+            >
+              <mat-icon>{{ showPassword() ? 'visibility' : 'visibility_off' }}</mat-icon>
+            </button>
+            @if (loginForm.get('password')?.hasError('required') && loginForm.get('password')?.touched) {
+              <mat-error id="password-error">Le mot de passe est requis</mat-error>
+            }
+            @if (loginForm.get('password')?.hasError('minlength') && loginForm.get('password')?.touched) {
+              <mat-error id="password-error">Le mot de passe doit contenir au moins 6 caractères</mat-error>
+            }
+          </mat-form-field>
+        </div>
+
+        <div class="security-note" aria-hidden="true">
+          <mat-icon>verified_user</mat-icon>
+          <span>Connexion chiffrée et accès réservé aux utilisateurs autorisés</span>
+        </div>
+
+        <button
+          mat-raised-button
+          color="primary"
+          type="submit"
+          [disabled]="loading() || loginForm.invalid"
+          class="btn-login"
+        >
+          @if (loading()) {
+            <mat-spinner diameter="20"></mat-spinner>
+            <span>Connexion en cours...</span>
+          } @else {
+            <ng-container>
+              <mat-icon aria-hidden="true">login</mat-icon>
+            </ng-container>
+            <span>Se connecter</span>
           }
-        </mat-form-field>
+        </button>
+      </form>
+
+      <div class="login-links">
+        <button type="button" class="link-button" (click)="goToForgotPassword()">
+          Mot de passe oublié ?
+        </button>
       </div>
-
-      <div class="form-group">
-        <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Mot de passe</mat-label>
-          <input
-            matInput
-            formControlName="password"
-            [type]="showPassword() ? 'text' : 'password'"
-            autocomplete="current-password"
-            placeholder="••••••••"
-            [attr.aria-invalid]="loginForm.get('password')?.invalid && loginForm.get('password')?.touched"
-            aria-describedby="password-error"
-          />
-          <button
-            mat-icon-button
-            matSuffix
-            type="button"
-            (click)="togglePasswordVisibility()"
-            [attr.aria-label]="showPassword() ? 'Masquer le mot de passe' : 'Afficher le mot de passe'"
-          >
-            <mat-icon>{{ showPassword() ? 'visibility' : 'visibility_off' }}</mat-icon>
-          </button>
-          @if (loginForm.get('password')?.hasError('required') && loginForm.get('password')?.touched) {
-            <mat-error id="password-error">Le mot de passe est requis</mat-error>
-          }
-          @if (loginForm.get('password')?.hasError('minlength') && loginForm.get('password')?.touched) {
-            <mat-error id="password-error">Le mot de passe doit contenir au moins 6 caractères</mat-error>
-          }
-        </mat-form-field>
-      </div>
-
-      <!-- Submit Button -->
-      <button
-        mat-raised-button
-        color="primary"
-        type="submit"
-        [disabled]="loading() || loginForm.invalid"
-        class="btn-login"
-      >
-        @if (loading()) {
-          <mat-spinner diameter="20"></mat-spinner>
-          <span>Connexion en cours...</span>
-        } @else {
-          <ng-container>
-            <mat-icon aria-hidden="true">login</mat-icon>
-          </ng-container> 
-          
-          <span>Se connecter</span>
-        }
-      </button>
-    </form>
-
-    <!-- Links -->
-    <div class="login-links">
-      <a (click)="goToForgotPassword()" role="button" tabindex="0">Mot de passe oublié?</a>
-    </div> 
+    </div>
   </div>
 </div>

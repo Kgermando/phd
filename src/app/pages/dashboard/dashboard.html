@@ -307,7 +307,7 @@
       <a routerLink="/producteurs" class="btn btn-ghost btn-sm">Voir tous</a>
     </div>
     <ul class="recent-list" aria-label="Derniers producteurs">
-      @for (p of recent(); track p.uuid) {
+      @for (p of recent(); track $index) {
         <li class="recent-item">
           <div>
             <div class="recent-name">{{ p.nom }}</div>

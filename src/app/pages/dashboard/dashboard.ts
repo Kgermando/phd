@@ -56,11 +56,16 @@ export class DashboardComponent implements OnInit {
   eligibilityRate = computed(() => this.total() > 0 ? Math.round((this.eligible() / this.total()) * 100) : 0);
 
   // ── Chart shared configs ─────────────────────────────────
-  readonly donutChartConfig  = { type: 'donut' as const, height: 260, fontFamily: 'inherit' };
-  readonly pieChartConfig    = { type: 'pie'   as const, height: 260, fontFamily: 'inherit' };
-  readonly areaChartConfig   = { type: 'area'  as const, height: 220, fontFamily: 'inherit', toolbar: { show: false } };
-  readonly barChartConfig    = { type: 'bar'   as const, height: 220, fontFamily: 'inherit', toolbar: { show: false } };
-  readonly hBarChartConfig   = { type: 'bar'   as const, height: 220, fontFamily: 'inherit', toolbar: { show: false } };
+  private readonly _chartResponsive = [
+    { breakpoint: 768, options: { chart: { height: 200 } } },
+    { breakpoint: 480, options: { chart: { height: 170 } } },
+  ];
+
+  readonly donutChartConfig  = { type: 'donut' as const, height: 260, fontFamily: 'inherit', responsive: this._chartResponsive };
+  readonly pieChartConfig    = { type: 'pie'   as const, height: 260, fontFamily: 'inherit', responsive: this._chartResponsive };
+  readonly areaChartConfig   = { type: 'area'  as const, height: 220, fontFamily: 'inherit', toolbar: { show: false }, responsive: this._chartResponsive };
+  readonly barChartConfig    = { type: 'bar'   as const, height: 220, fontFamily: 'inherit', toolbar: { show: false }, responsive: this._chartResponsive };
+  readonly hBarChartConfig   = { type: 'bar'   as const, height: 220, fontFamily: 'inherit', toolbar: { show: false }, responsive: this._chartResponsive };
   readonly legendBottom      = { position: 'bottom' as const, fontSize: '12px', fontFamily: 'inherit' };
   readonly donutPlotOptions  = { pie: { donut: { size: '65%' } } };
   readonly barPlotOptions    = { bar: { columnWidth: '60%', borderRadius: 4 } };

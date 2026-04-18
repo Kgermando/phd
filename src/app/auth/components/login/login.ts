@@ -104,11 +104,4 @@ export class LoginComponent {
   goToForgotPassword(): void {
     this.router.navigate(['/auth/forgot-password']);
   }
-
-  /**
-   * Obtenir le statut de connexion
-   */
-  get connectionStatus(): string {
-    return this.isOnline() ? 'En ligne' : 'Hors ligne';
-  }
 }
