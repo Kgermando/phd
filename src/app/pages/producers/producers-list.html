@@ -241,19 +241,6 @@
   }
 </div>
 
-<!-- Pagination -->
-<div class="pagination-controls">
-  <div class="pagination-info">Page {{ currentPage() }} / {{ totalPages() }}</div>
-  <div class="pagination-buttons">
-    <button class="btn btn-secondary" (click)="previousPage()" [disabled]="currentPage() === 1 || loading()">
-      <mat-icon>chevron_left</mat-icon> Précédent
-    </button>
-    <button class="btn btn-secondary" (click)="nextPage()" [disabled]="currentPage() >= totalPages() || loading()">
-      Suivant <mat-icon>chevron_right</mat-icon>
-    </button>
-  </div>
-</div>
-
 <!-- Cards (mobile) -->
 @if (filtered().length > 0) {
   <ul class="mobile-cards" aria-label="Liste des producteurs">
@@ -309,3 +296,19 @@
     <button class="btn btn-ghost btn-sm" (click)="resetFilters()">Réinitialiser les filtres</button>
   </div>
 }
+
+<!-- Pagination -->
+<div class="pagination-controls" aria-label="Pagination">
+  <div class="pagination-info">
+    Page <strong>{{ currentPage() }}</strong> / <strong>{{ totalPages() }}</strong>
+    <span class="pagination-total">({{ totalRecords() }} résultats)</span>
+  </div>
+  <div class="pagination-buttons">
+    <button class="btn btn-secondary" (click)="previousPage()" [disabled]="currentPage() === 1 || loading()" aria-label="Page précédente">
+      <mat-icon>chevron_left</mat-icon> Précédent
+    </button>
+    <button class="btn btn-secondary" (click)="nextPage()" [disabled]="currentPage() >= totalPages() || loading()" aria-label="Page suivante">
+      Suivant <mat-icon>chevron_right</mat-icon>
+    </button>
+  </div>
+</div>

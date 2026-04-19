@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } from '@angular/core';
+import { DatePipe } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { MatIcon } from '@angular/material/icon';
@@ -9,7 +10,7 @@ import { AuthService } from '../../auth/services/auth.service';
 @Component({
   selector: 'app-producer-detail',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, MatIcon, ReactiveFormsModule],
+  imports: [RouterLink, MatIcon, ReactiveFormsModule, DatePipe],
   templateUrl: './producer-detail.html',
   styleUrl: './producer-detail.scss',
 })
@@ -23,6 +24,7 @@ export class ProducerDetailComponent implements OnInit {
   producer = signal<Producer | null>(null);
   scores = signal<Score[]>([]);
   notFound = signal(false);
+  isPending = signal(false);
   loading = computed(() => this.producersService.loading());
 
   // Score panel state
@@ -64,10 +66,26 @@ export class ProducerDetailComponent implements OnInit {
 
   async ngOnInit(): Promise<void> {
     const uuid = this.route.snapshot.paramMap.get('id') ?? '';
+
+    // Local (offline) producer
+    if (uuid.startsWith('local_')) {
+      this.isPending.set(true);
+      const p = this.producersService.getPendingByUUID(uuid);
+      if (!p) { this.notFound.set(true); return; }
+      this.producer.set(p);
+      // Pending producers cannot have server scores, only local ones
+      this.scores.set(this.producersService.getPendingScoresByProducer(uuid));
+      return;
+    }
+
+    // Online producer
     const p = await this.producersService.getProducerByUUID(uuid);
     if (!p) { this.notFound.set(true); return; }
     this.producer.set(p);
-    this.scores.set(p.scores ?? []);
+    // Merge server scores + any locally-pending scores for this producer
+    const serverScores = p.scores ?? [];
+    const localScores = this.producersService.getPendingScoresByProducer(uuid);
+    this.scores.set([...localScores, ...serverScores]);
   }
 
   openNewScore(): void {
@@ -102,12 +120,25 @@ export class ProducerDetailComponent implements OnInit {
       const producerUUID = this.producer()!.uuid!;
       const editing = this.editingScore();
       if (editing) {
-        await this.producersService.updateScore(editing.uuid!, this.scoreForm.getRawValue());
+        if (editing._pending) {
+          const updated = this.producersService.updatePendingScore(editing.uuid!, this.scoreForm.getRawValue());
+          this.scores.update(list => list.map(s => s.uuid === updated.uuid ? updated : s));
+        } else {
+          await this.producersService.updateScore(editing.uuid!, this.scoreForm.getRawValue());
+          const serverScores = await this.producersService.getScoresByProducer(producerUUID);
+          const localScores = this.producersService.getPendingScoresByProducer(producerUUID);
+          this.scores.set([...localScores, ...serverScores]);
+        }
       } else {
-        await this.producersService.createScore(producerUUID, this.scoreForm.getRawValue());
+        const created = await this.producersService.createScore(producerUUID, this.scoreForm.getRawValue());
+        if (created._pending) {
+          this.scores.update(list => [created, ...list]);
+        } else {
+          const serverScores = await this.producersService.getScoresByProducer(producerUUID);
+          const localScores = this.producersService.getPendingScoresByProducer(producerUUID);
+          this.scores.set([...localScores, ...serverScores]);
+        }
       }
-      const updatedScores = await this.producersService.getScoresByProducer(producerUUID);
-      this.scores.set(updatedScores);
       this.showScoreForm.set(false);
       this.editingScore.set(null);
     } catch (err: any) {
@@ -120,9 +151,16 @@ export class ProducerDetailComponent implements OnInit {
   async deleteScore(score: Score): Promise<void> {
     if (!confirm('Supprimer ce score ?')) return;
     try {
-      await this.producersService.deleteScore(score.uuid!);
-      const updatedScores = await this.producersService.getScoresByProducer(this.producer()!.uuid!);
-      this.scores.set(updatedScores);
+      if (score._pending) {
+        this.producersService.removePendingScore(score.uuid!);
+        this.scores.update(list => list.filter(s => s.uuid !== score.uuid));
+      } else {
+        await this.producersService.deleteScore(score.uuid!);
+        const producerUUID = this.producer()!.uuid!;
+        const serverScores = await this.producersService.getScoresByProducer(producerUUID);
+        const localScores = this.producersService.getPendingScoresByProducer(producerUUID);
+        this.scores.set([...localScores, ...serverScores]);
+      }
     } catch (err: any) {
       this.scoreError.set(err.message ?? 'Erreur lors de la suppression');
     }
@@ -131,7 +169,11 @@ export class ProducerDetailComponent implements OnInit {
   async delete(): Promise<void> {
     const p = this.producer();
     if (!p || !confirm(`Supprimer ${p.nom} ? Cette action est irréversible.`)) return;
-    await this.producersService.deleteProducer(p.uuid!);
+    if (this.isPending()) {
+      this.producersService.removePending(p.uuid!);
+    } else {
+      await this.producersService.deleteProducer(p.uuid!);
+    }
     this.router.navigate(['/producteurs']);
   }
 

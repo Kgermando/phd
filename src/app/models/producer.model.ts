@@ -36,6 +36,9 @@ export interface Score {
   recommande: boolean;
   created_at?: Date;
   updated_at?: Date;
+
+  // Offline sync flag (front-end only, not sent to backend)
+  _pending?: boolean;
 }
 
 // =====================================================
@@ -110,6 +113,9 @@ export interface Producer {
 
   scores?: Score[];
 
+  /** Computed by backend on paginated list responses (score >= 60 → eligible). */
+  total_score?: number;
+
   // Offline sync flag (front-end only, not sent to backend)
   _pending?: boolean;
 }
@@ -118,10 +124,10 @@ export interface Producer {
 // PRODUCER STATS - Returned by GET /producers/stats
 // =====================================================
 export interface ProducerStats {
-  Total: number;
-  Eligible: number;
-  NonEligible: number;
-  Femmes: number;
+  total: number;
+  eligible: number;
+  non_eligible: number;
+  femmes: number;
 }
 
 // =====================================================
@@ -147,8 +153,5 @@ export interface ScoreDetail {
   institutional_support: number;
 }
 
-export interface ProducerWithScore {
-  producer: Producer;
-  score: number;
-  score_detail: ScoreDetail;
-}
+/** Backend embeds all Producer fields at the top level and appends total_score. */
+export type ProducerWithScore = Producer & { total_score: number; };

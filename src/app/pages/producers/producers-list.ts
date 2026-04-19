@@ -6,6 +6,7 @@ import { Producer, ProducerStats } from '../../models/models';
 import { ProducersService } from '../../services/producers.service';
 import { AuthService } from '../../auth/services/auth.service';
 import { NOMS_PROVINCES, getTerritoiresByProvince } from '../../utils/rdc-geo';
+import { scoreProducer } from '../../utils/scoring';
 
 @Component({
   selector: 'app-producers-list',
@@ -39,18 +40,13 @@ export class ProducersListComponent implements OnInit {
   /** Pending local producers not yet synced */
   pending = computed(() => this.producersService.pendingSync());
 
-  /** Online producers filtered by sexe + zone + province + territoire */
+  /**
+   * Online producers filtered by sexe only.
+   * Province, territoire, zone and village are already applied server-side.
+   */
   private filteredOnline = computed(() => {
     const sexe = this.sexeFilter();
-    const zone = this.zoneFilter();
-    const province = this.provinceFilter();
-    const territoire = this.territoireFilter();
-    return this.all().filter(p =>
-      (sexe === 'tous' || p.sexe === sexe) &&
-      (!zone || p.zone === zone) &&
-      (!province || p.province === province) &&
-      (!territoire || p.territoire === territoire)
-    );
+    return this.all().filter(p => sexe === 'tous' || p.sexe === sexe);
   });
 
   /** Pending producers filtered by sexe + zone + province + territoire (local-only, prefix list) */
@@ -72,10 +68,10 @@ export class ProducersListComponent implements OnInit {
 
   private stats = signal<ProducerStats | null>(null);
 
-  totalCount = computed(() => this.stats()?.Total ?? this.totalRecords());
-  eligibleCount = computed(() => this.stats()?.Eligible ?? 0);
-  nonEligibleCount = computed(() => this.stats()?.NonEligible ?? 0);
-  femmesCount = computed(() => this.stats()?.Femmes ?? 0);
+  totalCount = computed(() => this.stats()?.total ?? this.totalRecords());
+  eligibleCount = computed(() => this.stats()?.eligible ?? 0);
+  nonEligibleCount = computed(() => this.stats()?.non_eligible ?? 0);
+  femmesCount = computed(() => this.stats()?.femmes ?? 0);
   pendingCount = computed(() => this.pending().length);
 
   async ngOnInit(): Promise<void> {
@@ -99,6 +95,7 @@ export class ProducersListComponent implements OnInit {
       this.villageFilter(),
       this.provinceFilter(),
       this.territoireFilter(),
+      this.zoneFilter(),
     );
     this.all.set(result.data);
     this.totalPages.set(result.total_pages);
@@ -125,11 +122,16 @@ export class ProducersListComponent implements OnInit {
   }
 
   getScore(p: Producer): number {
-    return p.scores?.[0]?.score_total ?? 0;
+    // 1. Server-computed score from paginated list (> 0 means backend scored it)
+    if (p.total_score != null && p.total_score > 0) return Math.round(p.total_score);
+    // 2. Manually assigned score stored in DB
+    if (p.scores?.[0]?.score_total) return p.scores[0].score_total;
+    // 3. Compute client-side from producer fields (offline or no score assigned yet)
+    return scoreProducer(p).total;
   }
 
   isEligible(p: Producer): boolean {
-    return p.scores?.[0]?.recommande ?? false;
+    return this.getScore(p) >= 60;
   }
 
   totalha(p: Producer): number {

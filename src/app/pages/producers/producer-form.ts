@@ -35,6 +35,7 @@ export class ProducerFormComponent implements OnInit {
   readonly provinces = NOMS_PROVINCES;
 
   isEdit = signal(false);
+  isPending = signal(false);
   saving = signal(false);
   saved = signal(false);
   savedOffline = signal(false);
@@ -167,6 +168,24 @@ export class ProducerFormComponent implements OnInit {
     if (id && id !== 'nouveau') {
       this.isEdit.set(true);
       this.editUUID = id;
+
+      // Local (offline) producer: UUID starts with 'local_'
+      if (id.startsWith('local_')) {
+        this.isPending.set(true);
+        const p = this.producersService.getPendingByUUID(id);
+        if (p) {
+          while (this.champsArray.length > 0) this.champsArray.removeAt(0);
+          for (const _ of (p.champs ?? [])) this.champsArray.push(this.buildChamp());
+          const patchValue: Partial<Producer> = { ...p };
+          if (patchValue.date_naissance) {
+            patchValue.date_naissance = patchValue.date_naissance.substring(0, 10);
+          }
+          this.form.patchValue(patchValue);
+        }
+        return;
+      }
+
+      // Online producer
       const p = await this.producersService.getProducerByUUID(id);
       if (p) {
         while (this.champsArray.length > 0) this.champsArray.removeAt(0);
@@ -195,10 +214,18 @@ export class ProducerFormComponent implements OnInit {
         val.date_naissance = `${val.date_naissance}T00:00:00Z`;
       }
       if (this.isEdit() && this.editUUID) {
-        await this.producersService.updateProducer(this.editUUID, val);
-        this.saving.set(false);
-        this.saved.set(true);
-        setTimeout(() => this.router.navigate(['/producteurs']), 1200);
+        if (this.isPending()) {
+          // Update locally — stays pending until sync
+          this.producersService.updatePending(this.editUUID, val);
+          this.saving.set(false);
+          this.savedOffline.set(true);
+          setTimeout(() => this.router.navigate(['/producteurs']), 1500);
+        } else {
+          await this.producersService.updateProducer(this.editUUID, val);
+          this.saving.set(false);
+          this.saved.set(true);
+          setTimeout(() => this.router.navigate(['/producteurs']), 1200);
+        }
       } else {
         const result = await this.producersService.createProducer(val);
         this.saving.set(false);

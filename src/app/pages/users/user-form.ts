@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { MatIcon } from '@angular/material/icon';
 import { UsersService } from '../../services/users.service';
 import { User, UserResponse } from '../../models/models';
@@ -10,7 +10,7 @@ import { AuthService } from '../../auth/services/auth.service';
 @Component({
   selector: 'app-user-form',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, MatIcon, CommonModule],
+  imports: [ReactiveFormsModule, MatIcon, CommonModule, RouterLink],
   templateUrl: './user-form.html',
   styleUrl: './user-form.scss',
 })

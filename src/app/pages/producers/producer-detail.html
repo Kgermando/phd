@@ -29,6 +29,14 @@
       </div>
     </div>
 
+    <!-- Offline banner -->
+    @if (isPending()) {
+      <div class="offline-banner" role="status">
+        <mat-icon aria-hidden="true">cloud_off</mat-icon>
+        Ce producteur est enregistré <strong>hors-ligne</strong> et sera synchronisé lors de la prochaine connexion.
+      </div>
+    }
+
     <!-- Profile -->
     <div class="profile-card">
       <div [class]="producer()!.sexe === 'femme' ? 'avatar avatar-f' : 'avatar'" aria-hidden="true">
@@ -52,7 +60,7 @@
 
     <!-- Score section -->
     <div class="score-card">
-      <div class="score-card-header">
+        <div class="score-card-header">
         <span class="info-card-title"><mat-icon aria-hidden="true">analytics</mat-icon> Score de selection</span>
         @if (auth.canCreate()) {
           <button class="btn btn-primary btn-sm" (click)="openNewScore()" aria-label="Ajouter un score">
@@ -154,13 +162,17 @@
           <h4 class="score-history-title">Historique des scores</h4>
           <ul class="score-history-list" aria-label="Historique des scores">
             @for (s of scores(); track s.uuid) {
-              <li class="score-history-item">
+              <li class="score-history-item" [class.score-pending]="s._pending">
                 <span class="score-history-total">{{ s.score_total }}/100</span>
-                <span
-                  class="score-history-badge"
-                  [class.eligible-badge]="s.recommande"
-                  [class.ineligible-badge]="!s.recommande"
-                >{{ s.recommande ? 'Eligible' : 'Non eligible' }}</span>
+                @if (s._pending) {
+                  <span class="score-pending-badge"><mat-icon aria-hidden="true">cloud_off</mat-icon> Hors-ligne</span>
+                } @else {
+                  <span
+                    class="score-history-badge"
+                    [class.eligible-badge]="s.recommande"
+                    [class.ineligible-badge]="!s.recommande"
+                  >{{ s.recommande ? 'Eligible' : 'Non eligible' }}</span>
+                }
                 <div class="score-history-actions">
                   @if (auth.canEdit()) {
                     <button class="icon-btn" (click)="openEditScore(s)" aria-label="Modifier ce score">
@@ -186,7 +198,7 @@
         <div class="info-card-title"><mat-icon aria-hidden="true">info</mat-icon> Informations generales</div>
         <div class="info-row">
           <span class="info-label">Date de naissance</span>
-          <span class="info-value">{{ producer()!.date_naissance || '...' }}</span>
+          <span class="info-value">{{ (producer()!.date_naissance | date:'dd/MM/yyyy') || '...' }}</span>
         </div>
         <div class="info-row">
           <span class="info-label">Province</span>

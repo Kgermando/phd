@@ -11,6 +11,7 @@ export class ProducersService {
   private readonly auth = inject(AuthService);
   private readonly API_URL = `${environment.apiUrl}/producers`;
   private readonly OFFLINE_KEY = 'phd_offline_producers';
+  private readonly OFFLINE_SCORES_KEY = 'phd_offline_scores';
 
   producers = signal<Producer[]>([]);
   loading = signal(false);
@@ -61,16 +62,48 @@ export class ProducersService {
     this.writePending(this.readPending().filter(p => p.uuid !== uuid));
   }
 
-  /** Try to push all pending local producers to the server. */
-  async syncPending(): Promise<void> {
+  getPendingByUUID(uuid: string): Producer | null {
+    return this.readPending().find(p => p.uuid === uuid) ?? null;
+  }
+
+  updatePending(uuid: string, data: Partial<Producer>): Producer {
     const list = this.readPending();
-    if (!list.length) return;
-    for (const p of list) {
+    const idx = list.findIndex(p => p.uuid === uuid);
+    if (idx === -1) throw new Error('Producteur local introuvable');
+    const updated: Producer = { ...list[idx], ...data, uuid, _pending: true };
+    list[idx] = updated;
+    this.writePending(list);
+    return updated;
+  }
+
+  /** Try to push all pending local producers and scores to the server. */
+  async syncPending(): Promise<void> {
+    // 1. Sync pending producers; after creation, re-key any related pending scores
+    const producerList = this.readPending();
+    for (const p of producerList) {
       try {
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { uuid, _pending, created_at, updated_at, ...payload } = p as any;
-        await this.createProducerOnline(payload);
-        this.removePending(p.uuid!);
+        const { uuid: localUUID, _pending, created_at, updated_at, ...payload } = p as any;
+        const created = await this.createProducerOnline(payload);
+        this.removePending(localUUID);
+        // Re-associate pending scores from local UUID → real server UUID
+        const related = this.readPendingScores().filter(s => s.producer_uuid === localUUID);
+        for (const s of related) {
+          this.updatePendingScore(s.uuid!, { producer_uuid: created.uuid });
+        }
+      } catch {
+        // Keep it local; will retry next time
+      }
+    }
+
+    // 2. Sync pending scores whose producer is now on the server
+    const scores = this.readPendingScores().filter(s => !s.producer_uuid.startsWith('local_'));
+    for (const s of scores) {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { uuid, _pending, producer_uuid, created_at, updated_at, ...payload } = s as any;
+        await this.createScoreOnline(producer_uuid, payload);
+        this.removePendingScore(uuid);
       } catch {
         // Keep it local; will retry next time
       }
@@ -104,6 +137,8 @@ export class ProducersService {
     village = '',
     province = '',
     territoire = '',
+    zone = '',
+    userUUID = '',
   ): Promise<{ data: Producer[]; total: number; total_pages: number; current_page: number }> {
     this.loading.set(true);
     this.error.set(null);
@@ -116,6 +151,8 @@ export class ProducersService {
       if (village) params['village'] = village;
       if (province) params['province'] = province;
       if (territoire) params['territoire'] = territoire;
+      if (zone) params['zone'] = zone;
+      if (userUUID) params['user_uuid'] = userUUID;
       const query = new URLSearchParams(params).toString();
       const response = await firstValueFrom(
         this.http.get<{ status: string; total: number; page: number; limit: number; producers: Producer[] }>(
@@ -212,6 +249,68 @@ export class ProducersService {
 
   // ─── Scores ───────────────────────────────────────────────────
 
+  // ─── Offline score helpers ────────────────────────────────────
+
+  private readPendingScores(): Score[] {
+    try {
+      return JSON.parse(localStorage.getItem(this.OFFLINE_SCORES_KEY) ?? '[]') as Score[];
+    } catch {
+      return [];
+    }
+  }
+
+  private writePendingScores(list: Score[]): void {
+    localStorage.setItem(this.OFFLINE_SCORES_KEY, JSON.stringify(list));
+  }
+
+  addPendingScore(producerUUID: string, data: Partial<Score>): Score {
+    const local: Score = {
+      ...(data as Score),
+      uuid: `local_score_${crypto.randomUUID()}`,
+      producer_uuid: producerUUID,
+      score_total: this.computeScoreTotal(data),
+      recommande: this.computeScoreTotal(data) >= 60,
+      _pending: true,
+      created_at: new Date(),
+    };
+    const list = this.readPendingScores();
+    list.unshift(local); // newest first
+    this.writePendingScores(list);
+    return local;
+  }
+
+  updatePendingScore(uuid: string, data: Partial<Score>): Score {
+    const list = this.readPendingScores();
+    const idx = list.findIndex(s => s.uuid === uuid);
+    if (idx === -1) throw new Error('Score local introuvable');
+    const updated: Score = {
+      ...list[idx], ...data, uuid, _pending: true,
+      score_total: this.computeScoreTotal({ ...list[idx], ...data }),
+      recommande: this.computeScoreTotal({ ...list[idx], ...data }) >= 60,
+    };
+    list[idx] = updated;
+    this.writePendingScores(list);
+    return updated;
+  }
+
+  removePendingScore(uuid: string): void {
+    this.writePendingScores(this.readPendingScores().filter(s => s.uuid !== uuid));
+  }
+
+  getPendingScoresByProducer(producerUUID: string): Score[] {
+    return this.readPendingScores().filter(s => s.producer_uuid === producerUUID);
+  }
+
+  private computeScoreTotal(data: Partial<Score>): number {
+    const fields: (keyof Score)[] = [
+      'superficie_cultivee', 'experience_riziculture', 'statut_foncier_securise',
+      'acces_eau', 'respect_itineraires_techniques', 'pratiques_environnementales',
+      'vulnerabilite_climatique', 'organisation_cooperative', 'capacite_production',
+      'motivation_engagement', 'inclusion_sociale',
+    ];
+    return fields.reduce((sum, k) => sum + ((data[k] as number) ?? 0), 0);
+  }
+
   async getScoresByProducer(producerUUID: string): Promise<Score[]> {
     this.error.set(null);
     try {
@@ -230,6 +329,13 @@ export class ProducersService {
 
   async createScore(producerUUID: string, scoreData: Partial<Score>): Promise<Score> {
     this.error.set(null);
+    if (!navigator.onLine) {
+      return this.addPendingScore(producerUUID, scoreData);
+    }
+    return this.createScoreOnline(producerUUID, scoreData);
+  }
+
+  private async createScoreOnline(producerUUID: string, scoreData: Partial<Score>): Promise<Score> {
     const response = await firstValueFrom(
       this.http.post<{ status: string; data: Score }>(
         `${this.API_URL}/${producerUUID}/scores/create`, scoreData,
