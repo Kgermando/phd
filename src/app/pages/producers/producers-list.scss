@@ -392,6 +392,13 @@ td {
   color: var(--text-muted);
 }
 
+.score-none {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-muted);
+  line-height: 1;
+}
+
 /* ── Status badge ── */
 .status-badge {
   display: inline-flex;

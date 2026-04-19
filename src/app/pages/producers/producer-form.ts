@@ -148,6 +148,7 @@ export class ProducerFormComponent implements OnInit {
 
   buildChamp(): FormGroup {
     return this.fb.group({
+      uuid: [''],
       localisation: [''],
       superficie: [1],
       type_riziculture: ['pluviale'],
@@ -197,23 +198,22 @@ export class ProducerFormComponent implements OnInit {
 
   async ngOnInit(): Promise<void> {
     const id = this.route.snapshot.paramMap.get('id');
-    if (id && id !== 'nouveau') {
+    if (id && id !== 'nouveau') { 
       this.isEdit.set(true);
       this.editUUID = id;
 
-      // Local (offline) producer: UUID starts with 'local_'
-      if (id.startsWith('local_')) {
+      // Check local pending producers first (by UUID, not by prefix)
+      const pendingProducer = this.producersService.getPendingByUUID(id);
+      if (pendingProducer) {
         this.isPending.set(true);
-        const p = this.producersService.getPendingByUUID(id);
-        if (p) {
-          while (this.champsArray.length > 0) this.champsArray.removeAt(0);
-          for (const _ of (p.champs ?? [])) this.champsArray.push(this.buildChamp());
-          const patchValue: Partial<Producer> = { ...p };
-          if (patchValue.date_naissance) {
-            patchValue.date_naissance = patchValue.date_naissance.substring(0, 10);
-          }
-          this.form.patchValue(patchValue);
+        const p = pendingProducer;
+        while (this.champsArray.length > 0) this.champsArray.removeAt(0);
+        for (const _ of (p.champs ?? [])) this.champsArray.push(this.buildChamp());
+        const patchValue: Partial<Producer> = { ...p };
+        if (patchValue.date_naissance) {
+          patchValue.date_naissance = patchValue.date_naissance.substring(0, 10);
         }
+        this.form.patchValue(patchValue);
         return;
       }
 
@@ -246,19 +246,39 @@ export class ProducerFormComponent implements OnInit {
         val.date_naissance = `${val.date_naissance}T00:00:00Z`;
       }
       if (this.isEdit() && this.editUUID) {
+        // Preserve existing champ UUIDs; assign new ones only for newly added champs
+        const producerUUID = this.editUUID;
+        val.champs = (val.champs ?? []).map(c => ({
+          ...c,
+          uuid: (c as any).uuid || crypto.randomUUID(),
+          producer_uuid: producerUUID,
+        }));
         if (this.isPending()) {
           // Update locally — stays pending until sync
-          this.producersService.updatePending(this.editUUID, val);
+          await this.producersService.updatePending(producerUUID, val);
           this.saving.set(false);
           this.savedOffline.set(true);
           setTimeout(() => this.router.navigate(['/producteurs']), 1500);
         } else {
-          await this.producersService.updateProducer(this.editUUID, val);
+          const result = await this.producersService.updateProducer(producerUUID, val);
           this.saving.set(false);
-          this.saved.set(true);
-          setTimeout(() => this.router.navigate(['/producteurs']), 1200);
+          if (result._pending) {
+            this.savedOffline.set(true);
+            setTimeout(() => this.router.navigate(['/producteurs']), 2000);
+          } else {
+            this.saved.set(true);
+            setTimeout(() => this.router.navigate(['/producteurs']), 1200);
+          }
         }
       } else {
+        // New producer: generate UUIDs on the frontend
+        const producerUUID = crypto.randomUUID();
+        val.uuid = producerUUID;
+        val.champs = (val.champs ?? []).map(c => ({
+          ...c,
+          uuid: (c as any).uuid || crypto.randomUUID(),
+          producer_uuid: producerUUID,
+        }));
         const result = await this.producersService.createProducer(val);
         this.saving.set(false);
         if (result._pending) {

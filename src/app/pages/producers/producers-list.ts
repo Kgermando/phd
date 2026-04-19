@@ -122,16 +122,22 @@ export class ProducersListComponent implements OnInit {
   }
 
   getScore(p: Producer): number {
-    // 1. Server-computed score from paginated list (> 0 means backend scored it)
+    // Server-computed score from paginated list
     if (p.total_score != null && p.total_score > 0) return Math.round(p.total_score);
-    // 2. Manually assigned score stored in DB
+    // Manually assigned score stored in DB
     if (p.scores?.[0]?.score_total) return p.scores[0].score_total;
-    // 3. Compute client-side from producer fields (offline or no score assigned yet)
-    return scoreProducer(p).total;
+    return 0;
+  }
+
+  /** True only when a score has actually been saved (server or local pending). */
+  hasScore(p: Producer): boolean {
+    return (p.total_score != null && p.total_score > 0) ||
+      (!!p.scores?.[0]?.score_total && p.scores[0].score_total > 0);
   }
 
   isEligible(p: Producer): boolean {
-    return this.getScore(p) >= 60;
+    // Use computed score as a preliminary classification even before a manual score exists
+    return scoreProducer(p).total >= 60;
   }
 
   totalha(p: Producer): number {

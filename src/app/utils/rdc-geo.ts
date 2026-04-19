@@ -65,7 +65,7 @@ export const PROVINCES_RDC: ProvinceRDC[] = [
           {
             nom: 'Monzamboli',
             groupements: [
-              'Bolupi', 'Ndobo', 'Yakombo', 'Yalombo', 'Yambau',
+              'Bolupi', 'Ndobo', 'Yakombo', 'Yalombo', 'Yambao',
               'Yambenga', 'Yamendo', 'Yangola', 'Yanzela', 'Yatshonzo',
             ],
           },

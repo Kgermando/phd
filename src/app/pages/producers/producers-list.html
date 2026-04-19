@@ -169,17 +169,21 @@
 
             <!-- Score -->
             <td class="td-score">
-              <div class="score-number" [class.score-good]="getScore(p) >= 60" [class.score-bad]="getScore(p) < 60">
-                {{ getScore(p) }}
-              </div>
-              <div class="score-bar-mini">
-                <div
-                  class="score-bar-fill"
-                  [style.width.%]="getScore(p)"
-                  [style.background]="getScore(p) >= 60 ? '#43a047' : '#ef5350'"
-                ></div>
-              </div>
-              <div class="score-label">/100</div>
+              @if (hasScore(p)) {
+                <div class="score-number" [class.score-good]="getScore(p) >= 60" [class.score-bad]="getScore(p) < 60">
+                  {{ getScore(p) }}
+                </div>
+                <div class="score-bar-mini">
+                  <div
+                    class="score-bar-fill"
+                    [style.width.%]="getScore(p)"
+                    [style.background]="getScore(p) >= 60 ? '#43a047' : '#ef5350'"
+                  ></div>
+                </div>
+                <div class="score-label">/100</div>
+              } @else {
+                <div class="score-none" title="Score non encore attribué">—</div>
+              }
             </td>
 
             <!-- Statut -->
@@ -261,8 +265,14 @@
                 {{ p.village }}
               </div>
             </div>
-            <div class="mc-score" [class.score-good]="getScore(p) >= 60" [class.score-bad]="getScore(p) < 60">
-              {{ getScore(p) }}<span class="mc-score-denom">/100</span>
+            <div class="mc-score">
+              @if (hasScore(p)) {
+                <span [class.score-good]="getScore(p) >= 60" [class.score-bad]="getScore(p) < 60">
+                  {{ getScore(p) }}<span class="mc-score-denom">/100</span>
+                </span>
+              } @else {
+                <span class="score-none" title="Score non encore attribué">—</span>
+              }
             </div>
           </div>
           <div class="mc-bottom">

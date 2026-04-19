@@ -67,13 +67,12 @@ export class ProducerDetailComponent implements OnInit {
   async ngOnInit(): Promise<void> {
     const uuid = this.route.snapshot.paramMap.get('id') ?? '';
 
-    // Local (offline) producer
-    if (uuid.startsWith('local_')) {
+    // Check local pending producers first (by UUID, not by prefix)
+    const pendingProducer = this.producersService.getPendingByUUID(uuid);
+    if (pendingProducer) {
       this.isPending.set(true);
-      const p = this.producersService.getPendingByUUID(uuid);
-      if (!p) { this.notFound.set(true); return; }
-      this.producer.set(p);
-      // Pending producers cannot have server scores, only local ones
+      this.producer.set(pendingProducer);
+      // Pending producers can only have locally-stored scores
       this.scores.set(this.producersService.getPendingScoresByProducer(uuid));
       return;
     }
