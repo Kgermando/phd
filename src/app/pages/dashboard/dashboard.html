@@ -5,326 +5,237 @@
   </div>
   <div class="page-actions">
     <div class="export-dropdown-wrap">
-      <button
-        class="btn btn-outline btn-sm"
-        type="button"
-        (click)="toggleExportMenu()"
-        [attr.aria-expanded]="exportMenuOpen()"
-        aria-haspopup="true"
-        aria-label="Menu d'exportation"
-      >
+      <button class="btn btn-outline btn-sm" type="button" (click)="toggleExportMenu()"
+        [attr.aria-expanded]="exportMenuOpen()" aria-haspopup="true" aria-label="Menu d'exportation">
         <mat-icon aria-hidden="true">download</mat-icon>
         <span class="export-label">Exporter</span>
         <mat-icon aria-hidden="true">expand_more</mat-icon>
       </button>
 
       @if (exportMenuOpen()) {
-        <div class="export-dropdown" role="menu">
-          <!-- <div class="export-group-label">PDF</div>
+      <div class="export-dropdown" role="menu">
+        <!-- <div class="export-group-label">PDF</div>
           <button class="export-item" role="menuitem" type="button" (click)="exportPdf()">
             <mat-icon aria-hidden="true">picture_as_pdf</mat-icon> Tableau de bord
           </button>
           <button class="export-item" role="menuitem" type="button" (click)="exportUserPerformancePdf()">
             <mat-icon aria-hidden="true">picture_as_pdf</mat-icon> Performance des agents
           </button> -->
-          <div class="export-group-label">Excel</div>
-          <button class="export-item" role="menuitem" type="button" (click)="exportExcel()">
-            <mat-icon aria-hidden="true">table_view</mat-icon> Tableau de bord
-          </button>
-          <button class="export-item" role="menuitem" type="button" (click)="exportProducerScoresExcel()">
-            <mat-icon aria-hidden="true">table_view</mat-icon> Scores des producteurs
-          </button>
-          <button class="export-item" role="menuitem" type="button" (click)="exportUserPerformanceExcel()">
-            <mat-icon aria-hidden="true">table_view</mat-icon> Performance des agents
-          </button>
-        </div>
+        <div class="export-group-label">Excel</div>
+        <button class="export-item" role="menuitem" type="button" (click)="exportExcel()">
+          <mat-icon aria-hidden="true">table_view</mat-icon> Tableau de bord
+        </button>
+        <button class="export-item" role="menuitem" type="button" (click)="exportProducerScoresExcel()">
+          <mat-icon aria-hidden="true">table_view</mat-icon> Scores des producteurs
+        </button>
+        <button class="export-item" role="menuitem" type="button" (click)="exportUserPerformanceExcel()">
+          <mat-icon aria-hidden="true">table_view</mat-icon> Performance des agents
+        </button>
+      </div>
       }
     </div>
   </div>
 </div>
 
 @if (error()) {
-  <div class="dash-error" role="alert">
-    <mat-icon aria-hidden="true">error_outline</mat-icon>
-    <span>{{ error() }}</span>
-  </div>
+<div class="dash-error" role="alert">
+  <mat-icon aria-hidden="true">error_outline</mat-icon>
+  <span>{{ error() }}</span>
+</div>
 }
 
 @if (loaded()) {
-  <!-- KPI Cards -->
-  <div class="stats-grid">
-    <div class="stat-card">
-      <div class="stat-value">{{ total() }}</div>
-      <div class="stat-label"><mat-icon aria-hidden="true">group</mat-icon> Producteurs recensés</div>
-    </div>
-    <div class="stat-card green">
-      <div class="stat-value">{{ eligible() }}</div>
-      <div class="stat-label"><mat-icon aria-hidden="true">check_circle</mat-icon> Éligibles (score ≥ 60)</div>
-    </div>
-    <div class="stat-card red">
-      <div class="stat-value">{{ nonEligible() }}</div>
-      <div class="stat-label"><mat-icon aria-hidden="true">cancel</mat-icon> Non éligibles</div>
-    </div>
-    <div class="stat-card accent">
-      <div class="stat-value">{{ avgScore() | number:'1.0-1' }}</div>
-      <div class="stat-label"><mat-icon aria-hidden="true">star</mat-icon> Score moyen / 100</div>
-    </div>
-    <div class="stat-card rate"
-      role="progressbar"
-      [attr.aria-valuenow]="eligibilityRate()"
-      aria-valuemin="0"
-      aria-valuemax="100"
-      [attr.aria-label]="'Taux d\'\u00e9ligibilit\u00e9 : ' + eligibilityRate() + '%'"
-    >
-      <div class="stat-value">{{ eligibilityRate() }}%</div>
-      <div class="stat-label"><mat-icon aria-hidden="true">percent</mat-icon> Taux d'éligibilité</div>
-      <div class="eligibility-bar" aria-hidden="true">
-        <div class="eligibility-fill" [style.width.%]="eligibilityRate()"></div>
-      </div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-value">{{ zones().length }}</div>
-      <div class="stat-label"><mat-icon aria-hidden="true">place</mat-icon> Secteurs géographiques</div>
+<!-- KPI Cards -->
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-value">{{ total() }}</div>
+    <div class="stat-label"><mat-icon aria-hidden="true">group</mat-icon> Producteurs recensés</div>
+  </div>
+  <div class="stat-card green">
+    <div class="stat-value">{{ eligible() }}</div>
+    <div class="stat-label"><mat-icon aria-hidden="true">check_circle</mat-icon> Éligibles (score ≥ 60)</div>
+  </div>
+  <div class="stat-card red">
+    <div class="stat-value">{{ nonEligible() }}</div>
+    <div class="stat-label"><mat-icon aria-hidden="true">cancel</mat-icon> Non éligibles</div>
+  </div>
+  <div class="stat-card accent">
+    <div class="stat-value">{{ avgScore() | number:'1.0-1' }}</div>
+    <div class="stat-label"><mat-icon aria-hidden="true">star</mat-icon> Score moyen / 100</div>
+  </div>
+  <div class="stat-card rate" role="progressbar" [attr.aria-valuenow]="eligibilityRate()" aria-valuemin="0"
+    aria-valuemax="100" [attr.aria-label]="'Taux d\'éligibilité : ' + eligibilityRate() + '%'">
+    <div class="stat-value">{{ eligibilityRate() }}%</div>
+    <div class="stat-label"><mat-icon aria-hidden="true">percent</mat-icon> Taux d'éligibilité</div>
+    <div class="eligibility-bar" aria-hidden="true">
+      <div class="eligibility-fill" [style.width.%]="eligibilityRate()"></div>
     </div>
   </div>
-
-  <!-- Row 1 : Sexe donut + Évolution line chart -->
-  <div class="grid-2">
-    <div class="card">
-      <div class="section-title"><mat-icon aria-hidden="true">wc</mat-icon> Répartition par sexe</div>
-      <apx-chart
-        [series]="sexeSeries()"
-        [chart]="donutChartConfig"
-        [labels]="sexeLabels()"
-        [colors]="sexeColors"
-        [legend]="legendBottom"
-        [plotOptions]="donutPlotOptions"
-        [dataLabels]="{ enabled: true }"
-      ></apx-chart>
-    </div>
-
-    <div class="card">
-      <div class="section-title"><mat-icon aria-hidden="true">show_chart</mat-icon> Évolution des recensements</div>
-      @if (lineSeries()[0].data.length > 0) {
-        <apx-chart
-          [series]="lineSeries()"
-          [chart]="areaChartConfig"
-          [xaxis]="lineXAxis()"
-          [colors]="lineColors"
-          [stroke]="smoothStroke"
-          [fill]="areaFill"
-          [dataLabels]="noDataLabels"
-          [tooltip]="areaTooltip"
-        ></apx-chart>
-      } @else {
-        <p class="text-muted">Pas encore de données.</p>
-      }
-    </div>
+  <div class="stat-card">
+    <div class="stat-value">{{ zones().length }}</div>
+    <div class="stat-label"><mat-icon aria-hidden="true">place</mat-icon> Secteurs géographiques</div>
   </div>
+</div>
 
-  <!-- Row 2 : Statut foncier + Source d'eau -->
-  <div class="grid-2">
-    <div class="card">
-      <div class="section-title"><mat-icon aria-hidden="true">gavel</mat-icon> Statut foncier</div>
-      @if (statutFoncierSeries().length > 0) {
-        <apx-chart
-          [series]="statutFoncierSeries()"
-          [chart]="pieChartConfig"
-          [labels]="statutFoncierLabels()"
-          [colors]="statutFoncierColors()"
-          [legend]="legendBottom"
-          [dataLabels]="{ enabled: true }"
-        ></apx-chart>
-      } @else {
-        <p class="text-muted">Pas de données.</p>
-      }
-    </div>
+<div class="card mb-3">
+  <div class="section-title"><mat-icon aria-hidden="true">show_chart</mat-icon> Évolution des recensements</div>
+  @if (lineSeries()[0].data.length > 0) {
+  <apx-chart [series]="lineSeries()" [chart]="areaChartConfig" [xaxis]="lineXAxis()" [colors]="lineColors"
+    [stroke]="smoothStroke" [fill]="areaFill" [dataLabels]="noDataLabels" [tooltip]="areaTooltip"></apx-chart>
+  } @else {
+  <p class="text-muted">Pas encore de données.</p>
+  }
+</div>
 
-    <div class="card">
-      <div class="section-title"><mat-icon aria-hidden="true">water_drop</mat-icon> Source d'eau principale</div>
-      @if (sourceEauSeries().length > 0) {
-        <apx-chart
-          [series]="sourceEauSeries()"
-          [chart]="pieChartConfig"
-          [labels]="sourceEauLabels()"
-          [colors]="sourceEauColors()"
-          [legend]="legendBottom"
-          [dataLabels]="{ enabled: true }"
-        ></apx-chart>
-      } @else {
-        <p class="text-muted">Pas de données.</p>
-      }
-    </div>
+<!-- Row 1 : Sexe donut + Évolution line chart -->
+<div class="grid-2">
+  <div class="card">
+    <div class="section-title"><mat-icon aria-hidden="true">wc</mat-icon> Répartition par sexe</div>
+    <apx-chart [series]="sexeSeries()" [chart]="donutChartConfig" [labels]="sexeLabels()" [colors]="sexeColors"
+      [legend]="legendBottom" [plotOptions]="donutPlotOptions" [dataLabels]="{ enabled: true }"></apx-chart>
   </div>
-
-  <!-- Row 3 : Type de riziculture + Coopérative -->
-  <div class="grid-2">
-    <div class="card">
-      <div class="section-title"><mat-icon aria-hidden="true">grass</mat-icon> Type de riziculture</div>
-      @if (typeRizSeries().length > 0) {
-        <apx-chart
-          [series]="typeRizSeries()"
-          [chart]="pieChartConfig"
-          [labels]="typeRizLabels()"
-          [colors]="typeRizColors()"
-          [legend]="legendBottom"
-          [dataLabels]="{ enabled: true }"
-        ></apx-chart>
-      } @else {
-        <p class="text-muted">Pas de données.</p>
-      }
-    </div>
-
-    <div class="card">
-      <div class="section-title"><mat-icon aria-hidden="true">handshake</mat-icon> Appartenance à une coopérative</div>
-      @if (cooperativeSeries().length > 0) {
-        <apx-chart
-          [series]="cooperativeSeries()"
-          [chart]="pieChartConfig"
-          [labels]="cooperativeLabels()"
-          [colors]="cooperativeColors()"
-          [legend]="legendBottom"
-          [dataLabels]="{ enabled: true }"
-        ></apx-chart>
-      } @else {
-        <p class="text-muted">Pas de données.</p>
-      }
-    </div>
-  </div>
-
-  <!-- Zone pie : Répartition géographique -->
-  <div class="card mb-3">
-    <div class="section-title"><mat-icon aria-hidden="true">public</mat-icon> Répartition géographique des producteurs</div>
-    @if (zonePieSeries().length > 0) {
-      <apx-chart
-        [series]="zonePieSeries()"
-        [chart]="{ type: 'pie', height: 320, fontFamily: 'inherit' }"
-        [labels]="zonePieLabels()"
-        [colors]="zonePieColors()"
-        [legend]="legendBottom"
-        [dataLabels]="{ enabled: true }"
-      ></apx-chart>
+  <div class="card">
+    <div class="section-title"><mat-icon aria-hidden="true">cake</mat-icon> Tranche d'âge</div>
+    @if (trancheAgeSeries()[0].data.length > 0) {
+    <apx-chart [series]="trancheAgeSeries()" [chart]="barChartConfig" [xaxis]="trancheAgeXAxis()"
+      [colors]="trancheAgeColors" [plotOptions]="barPlotOptions" [dataLabels]="noDataLabels"></apx-chart>
     } @else {
-      <p class="text-muted">Pas encore de données par zone.</p>
+    <p class="text-muted">Pas de données.</p>
     }
   </div>
 
-  <!-- Row 4 : Tranche d'âge (bar) + Zones (bar horizontal) -->
-  <div class="grid-2">
-    <div class="card">
-      <div class="section-title"><mat-icon aria-hidden="true">cake</mat-icon> Tranche d'âge</div>
-      @if (trancheAgeSeries()[0].data.length > 0) {
-        <apx-chart
-          [series]="trancheAgeSeries()"
-          [chart]="barChartConfig"
-          [xaxis]="trancheAgeXAxis()"
-          [colors]="trancheAgeColors"
-          [plotOptions]="barPlotOptions"
-          [dataLabels]="noDataLabels"
-        ></apx-chart>
-      } @else {
-        <p class="text-muted">Pas de données.</p>
-      }
-    </div>
+</div>
 
-    <div class="card">
-      <div class="section-title"><mat-icon aria-hidden="true">place</mat-icon> Producteurs par secteur géographique</div>
-      @if (zonesSeries()[0].data.length > 0) {
-        <apx-chart
-          [series]="zonesSeries()"
-          [chart]="hBarChartConfig"
-          [xaxis]="zonesXAxis()"
-          [colors]="zonesColors"
-          [plotOptions]="hBarPlotOptions"
-          [dataLabels]="noDataLabels"
-        ></apx-chart>
-      } @else {
-        <p class="text-muted">Pas de données.</p>
-      }
-    </div>
-  </div>
-
-  <!-- Agent performance table -->
-  <div class="card mb-3">
-    <div class="section-title">
-      <mat-icon aria-hidden="true">leaderboard</mat-icon> Performance des agents de recensement
-    </div>
-    @if (userPerformance().length > 0) {
-      <div class="agent-table-wrap">
-        <table class="agent-table" aria-label="Classement des agents par performance">
-          <thead>
-            <tr>
-              <th scope="col">#</th>
-              <th scope="col">Agent</th>
-              <th scope="col" class="text-right">Producteurs</th>
-              <th scope="col" class="text-right">Éligibles</th>
-              <th scope="col" class="text-right">Non élig.</th>
-              <th scope="col" class="text-right">Score moy.</th>
-              <th scope="col">Taux d'éligibilité</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (u of userPerformance(); track u.user_uuid; let i = $index) {
-              <tr>
-                <td>
-                  <span class="rank"
-                    [class.rank-gold]="i === 0"
-                    [class.rank-silver]="i === 1"
-                    [class.rank-bronze]="i === 2"
-                  >{{ i + 1 }}</span>
-                </td>
-                <td class="agent-name">{{ u.user_fullname }}</td>
-                <td class="text-right">{{ u.total_producers }}</td>
-                <td class="text-right text-green">{{ u.eligible_producers }}</td>
-                <td class="text-right text-red">{{ u.non_eligible_producers }}</td>
-                <td class="text-right">{{ u.avg_score | number:'1.1-1' }}</td>
-                <td>
-                  <div class="rate-cell">
-                    <div class="rate-bar-bg">
-                      <div class="rate-bar-fill"
-                        [style.width.%]="u.completion_rate"
-                        [class.rate-green]="u.completion_rate >= 60"
-                        [class.rate-red]="u.completion_rate < 60"
-                      ></div>
-                    </div>
-                    <span class="rate-label">{{ u.completion_rate | number:'1.0-0' }}%</span>
-                  </div>
-                </td>
-              </tr>
-            }
-          </tbody>
-        </table>
-      </div>
+<!-- Row 2 : Statut foncier + Source d'eau -->
+<div class="grid-2">
+  <div class="card">
+    <div class="section-title"><mat-icon aria-hidden="true">gavel</mat-icon> Statut foncier</div>
+    @if (statutFoncierSeries().length > 0) {
+    <apx-chart [series]="statutFoncierSeries()" [chart]="pieChartConfig" [labels]="statutFoncierLabels()"
+      [colors]="statutFoncierColors()" [legend]="legendBottom" [dataLabels]="{ enabled: true }"></apx-chart>
     } @else {
-      <p class="text-muted">Aucune donnée de performance disponible.</p>
+    <p class="text-muted">Pas de données.</p>
     }
   </div>
 
-  <!-- Recent producers -->
-  <div class="card mb-3">
-    <div class="section-title recent-header">
-      <span><mat-icon aria-hidden="true">schedule</mat-icon> Derniers producteurs recensés</span>
-      <a routerLink="/producteurs" class="btn btn-ghost btn-sm">Voir tous</a>
-    </div>
-    <ul class="recent-list" aria-label="Derniers producteurs">
-      @for (p of recent(); track $index) {
-        <li class="recent-item">
-          <div>
-            <div class="recent-name">{{ p.nom }}</div>
-            <div class="recent-meta">{{ p.village }} · {{ p.zone }}</div>
-          </div>
-          <span
-            class="badge"
-            [class.badge-green]="p.score >= 60"
-            [class.badge-red]="p.score < 60"
-          >
-            {{ p.score }}/100
-          </span>
-        </li>
-      }
-    </ul>
+  <div class="card">
+    <div class="section-title"><mat-icon aria-hidden="true">water_drop</mat-icon> Source d'eau principale</div>
+    @if (sourceEauSeries().length > 0) {
+    <apx-chart [series]="sourceEauSeries()" [chart]="pieChartConfig" [labels]="sourceEauLabels()"
+      [colors]="sourceEauColors()" [legend]="legendBottom" [dataLabels]="{ enabled: true }"></apx-chart>
+    } @else {
+    <p class="text-muted">Pas de données.</p>
+    }
   </div>
+</div>
+
+<!-- Row 3 : Type de riziculture + Coopérative -->
+<div class="grid-2">
+  <div class="card">
+    <div class="section-title"><mat-icon aria-hidden="true">grass</mat-icon> Type de riziculture</div>
+    @if (typeRizSeries().length > 0) {
+    <apx-chart [series]="typeRizSeries()" [chart]="pieChartConfig" [labels]="typeRizLabels()" [colors]="typeRizColors()"
+      [legend]="legendBottom" [dataLabels]="{ enabled: true }"></apx-chart>
+    } @else {
+    <p class="text-muted">Pas de données.</p>
+    }
+  </div>
+
+  <div class="card">
+    <div class="section-title"><mat-icon aria-hidden="true">handshake</mat-icon> Appartenance à une coopérative</div>
+    @if (cooperativeSeries().length > 0) {
+    <apx-chart [series]="cooperativeSeries()" [chart]="pieChartConfig" [labels]="cooperativeLabels()"
+      [colors]="cooperativeColors()" [legend]="legendBottom" [dataLabels]="{ enabled: true }"></apx-chart>
+    } @else {
+    <p class="text-muted">Pas de données.</p>
+    }
+  </div>
+</div>
+
+
+
+<!-- Row 4 : Tranche d'âge (bar) + Zones (bar horizontal) -->
+<div class="card mb-3">
+  <div class="section-title"><mat-icon aria-hidden="true">place</mat-icon> Producteurs par secteur géographique</div>
+  @if (zonesSeries()[0].data.length > 0) {
+  <apx-chart [series]="zonesSeries()" [chart]="hBarChartConfig" [xaxis]="zonesXAxis()" [colors]="zonesColors"
+    [plotOptions]="hBarPlotOptions" [dataLabels]="noDataLabels"></apx-chart>
+  } @else {
+  <p class="text-muted">Pas de données.</p>
+  }
+</div>
+
+<!-- Agent performance table -->
+<div class="card mb-3">
+  <div class="section-title">
+    <mat-icon aria-hidden="true">leaderboard</mat-icon> Performance des agents de recensement
+  </div>
+  @if (userPerformance().length > 0) {
+  <div class="agent-table-wrap">
+    <table class="agent-table" aria-label="Classement des agents par performance">
+      <thead>
+        <tr>
+          <th scope="col">#</th>
+          <th scope="col">Agent</th>
+          <th scope="col" class="text-right">Producteurs</th>
+          <th scope="col" class="text-right">Éligibles</th>
+          <th scope="col" class="text-right">Non élig.</th>
+          <th scope="col" class="text-right">Score moy.</th>
+          <th scope="col">Taux d'éligibilité</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (u of userPerformance(); track u.user_uuid; let i = $index) {
+        <tr>
+          <td>
+            <span class="rank" [class.rank-gold]="i === 0" [class.rank-silver]="i === 1"
+              [class.rank-bronze]="i === 2">{{ i + 1 }}</span>
+          </td>
+          <td class="agent-name">{{ u.user_fullname }}</td>
+          <td class="text-right">{{ u.total_producers }}</td>
+          <td class="text-right text-green">{{ u.eligible_producers }}</td>
+          <td class="text-right text-red">{{ u.non_eligible_producers }}</td>
+          <td class="text-right">{{ u.avg_score | number:'1.1-1' }}</td>
+          <td>
+            <div class="rate-cell">
+              <div class="rate-bar-bg">
+                <div class="rate-bar-fill" [style.width.%]="u.completion_rate"
+                  [class.rate-green]="u.completion_rate >= 60" [class.rate-red]="u.completion_rate < 60"></div>
+              </div>
+              <span class="rate-label">{{ u.completion_rate | number:'1.0-0' }}%</span>
+            </div>
+          </td>
+        </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+  } @else {
+  <p class="text-muted">Aucune donnée de performance disponible.</p>
+  }
+</div>
+
+<!-- Recent producers -->
+<div class="card mb-3">
+  <div class="section-title recent-header">
+    <span><mat-icon aria-hidden="true">schedule</mat-icon> Derniers producteurs recensés</span>
+    <a routerLink="/producteurs" class="btn btn-ghost btn-sm">Voir tous</a>
+  </div>
+  <ul class="recent-list" aria-label="Derniers producteurs">
+    @for (p of recent(); track $index) {
+    <li class="recent-item">
+      <div>
+        <div class="recent-name">{{ p.nom }}</div>
+        <div class="recent-meta">{{ p.village }} · {{ p.zone }}</div>
+      </div>
+      <span class="badge" [class.badge-green]="p.score >= 60" [class.badge-red]="p.score < 60">
+        {{ p.score }}/100
+      </span>
+    </li>
+    }
+  </ul>
+</div>
 
 } @else {
-  <p class="text-muted text-center">Chargement des donn\u00e9es...</p>
+<p class="text-muted text-center">Chargement des données...</p>
 }
