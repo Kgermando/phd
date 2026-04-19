@@ -59,8 +59,9 @@ export interface Producer {
   telephone: string;
   province: string;
   territoire: string;
-  village: string;
+  secteur: string;
   groupement: string;
+  village: string;
 
   // Section 2 - Statut foncier & expérience
   statut_foncier: 'proprietaire' | 'exploitant' | 'metayer' | 'autre';

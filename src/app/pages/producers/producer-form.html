@@ -83,6 +83,28 @@
           </select>
         </div>
         <div class="form-group">
+          <label for="secteur">Secteur</label>
+          <select id="secteur" class="form-control" formControlName="secteur">
+            <option value="">
+              {{ secteurs().length === 0 ? "Sélectionnez d'abord un territoire" : "-- Choisir un secteur --" }}
+            </option>
+            @for (s of secteurs(); track s) {
+              <option [value]="s">{{ s }}</option>
+            }
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="groupement">Groupement</label>
+          <select id="groupement" class="form-control" formControlName="groupement">
+            <option value="">
+              {{ groupements().length === 0 ? "Sélectionnez d'abord un secteur" : "-- Choisir un groupement --" }}
+            </option>
+            @for (g of groupements(); track g) {
+              <option [value]="g">{{ g }}</option>
+            }
+          </select>
+        </div>
+        <div class="form-group">
           <label for="village">Village / Localité *</label>
           <input id="village" class="form-control" formControlName="village" type="text" />
         </div>
@@ -97,10 +119,6 @@
           @if (f['zone'].invalid && f['zone'].touched) {
             <div class="error-text">Champ obligatoire</div>
           }
-        </div>
-        <div class="form-group">
-          <label for="groupement">Groupement</label>
-          <input id="groupement" class="form-control" formControlName="groupement" type="text" />
         </div>
       </div>
     </div>

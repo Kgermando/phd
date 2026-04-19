@@ -7,7 +7,7 @@ import { MatIcon } from '@angular/material/icon';
 import { map, startWith } from 'rxjs';
 import { ProducersService } from '../../services/producers.service';
 import { Producer } from '../../models/models';
-import { NOMS_PROVINCES, getTerritoiresByProvince } from '../../utils/rdc-geo';
+import { NOMS_PROVINCES, getTerritoiresByProvince, getSecteursByTerritoire, getGroupementsBySecteur } from '../../utils/rdc-geo';
 
 @Component({
   selector: 'app-producer-form',
@@ -51,9 +51,10 @@ export class ProducerFormComponent implements OnInit {
     telephone: [''],
     province: ['', Validators.required],
     territoire: [''],
+    secteur: [''],
+    groupement: [''],
     village: ['', Validators.required],
     zone: ['', Validators.required],
-    groupement: [''],
     statut_foncier: ['proprietaire'],
     annees_experience: [0],
     membre_cooperative: [false],
@@ -99,7 +100,21 @@ export class ProducerFormComponent implements OnInit {
     ),
   );
 
+  private territoireValue = toSignal(
+    this.form.get('territoire')!.valueChanges.pipe(
+      startWith(this.form.get('territoire')!.value as string),
+    ),
+  );
+
+  private secteurValue = toSignal(
+    this.form.get('secteur')!.valueChanges.pipe(
+      startWith(this.form.get('secteur')!.value as string),
+    ),
+  );
+
   territoires = computed(() => getTerritoiresByProvince(this.provinceValue() ?? ''));
+  secteurs = computed(() => getSecteursByTerritoire(this.provinceValue() ?? '', this.territoireValue() ?? ''));
+  groupements = computed(() => getGroupementsBySecteur(this.provinceValue() ?? '', this.territoireValue() ?? '', this.secteurValue() ?? ''));
 
   constructor() {
     effect(() => {
@@ -107,6 +122,23 @@ export class ProducerFormComponent implements OnInit {
       const current = this.form.get('territoire')?.value as string;
       if (current && !terrs.includes(current)) {
         this.form.get('territoire')?.setValue('', { emitEvent: false });
+        this.form.get('secteur')?.setValue('', { emitEvent: false });
+        this.form.get('groupement')?.setValue('', { emitEvent: false });
+      }
+    });
+    effect(() => {
+      const sects = this.secteurs();
+      const current = this.form.get('secteur')?.value as string;
+      if (current && !sects.includes(current)) {
+        this.form.get('secteur')?.setValue('', { emitEvent: false });
+        this.form.get('groupement')?.setValue('', { emitEvent: false });
+      }
+    });
+    effect(() => {
+      const grps = this.groupements();
+      const current = this.form.get('groupement')?.value as string;
+      if (current && !grps.includes(current)) {
+        this.form.get('groupement')?.setValue('', { emitEvent: false });
       }
     });
   }
