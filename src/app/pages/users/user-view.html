@@ -1,0 +1,178 @@
+<!-- Back + Header -->
+<div class="page-header">
+  <div class="header-left">
+    <a routerLink="/utilisateurs" class="btn-back" aria-label="Retour à la liste">
+      <mat-icon aria-hidden="true">arrow_back</mat-icon>
+    </a>
+    <div>
+      <h2>Fiche utilisateur</h2>
+      <p class="subtitle">Informations et producteurs recensés</p>
+    </div>
+  </div>
+  @if (auth.canEdit() && user()) {
+    <a [routerLink]="['/utilisateurs', user()!.uuid, 'modifier']" class="btn btn-primary">
+      <mat-icon aria-hidden="true">edit</mat-icon> Modifier
+    </a>
+  }
+</div>
+
+@if (loading()) {
+  <div class="loading-prompt" aria-live="polite" aria-busy="true">
+    <div class="spinner"></div>
+    <p>Chargement...</p>
+  </div>
+} @else if (error()) {
+  <div class="error-prompt" role="alert">
+    <mat-icon aria-hidden="true">error</mat-icon>
+    <p>{{ error() }}</p>
+  </div>
+} @else if (user()) {
+
+  <!-- User Info Card -->
+  <section class="user-card" aria-label="Informations de l'utilisateur">
+    <div class="user-card-avatar" aria-hidden="true">
+      {{ user()!.fullname.charAt(0).toUpperCase() }}
+    </div>
+    <div class="user-card-body">
+      <h3>{{ user()!.fullname }}</h3>
+      <div class="user-meta">
+        <span class="badge badge-role">{{ getRoleLabel(user()!.role) }}</span>
+        <span class="badge" [class]="getStatusBadgeClass(user()!.status)">
+          {{ getStatusLabel(user()!.status) }}
+        </span>
+      </div>
+      <div class="user-details">
+        <div class="detail-item">
+          <mat-icon aria-hidden="true">email</mat-icon>
+          <span>{{ user()!.email }}</span>
+        </div>
+        <div class="detail-item">
+          <mat-icon aria-hidden="true">phone</mat-icon>
+          <span>{{ user()!.telephone }}</span>
+        </div>
+        <div class="detail-item">
+          <mat-icon aria-hidden="true">group</mat-icon>
+          <span>{{ total() }} producteur(s) recensé(s)</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Producers Section -->
+  <section aria-label="Producteurs recensés par cet utilisateur">
+    <div class="section-header">
+      <h3>Producteurs</h3>
+    </div>
+
+    <!-- Search & Filters -->
+    <div class="filters-bar" role="search" aria-label="Filtres">
+      <div class="search-box">
+        <mat-icon aria-hidden="true">search</mat-icon>
+        <input
+          type="search"
+          placeholder="Rechercher par nom, téléphone ou village..."
+          [ngModel]="search()" (ngModelChange)="search.set($event)"
+          (keyup.enter)="onSearch()"
+          aria-label="Rechercher un producteur"
+        />
+      </div>
+      <div class="filter-group">
+        <label class="filter-label" for="f-sexe">Sexe</label>
+        <select id="f-sexe" class="form-control" [ngModel]="sexeFilter()" (ngModelChange)="sexeFilter.set($event)" aria-label="Filtrer par sexe">
+          <option value="tous">Tous</option>
+          <option value="homme">Homme</option>
+          <option value="femme">Femme</option>
+        </select>
+      </div>
+      <button class="btn-reset" (click)="resetFilters()" title="Réinitialiser les filtres" aria-label="Réinitialiser les filtres">
+        <mat-icon aria-hidden="true">filter_alt_off</mat-icon>
+      </button>
+      <button class="btn btn-secondary" (click)="onSearch()" aria-label="Lancer la recherche">
+        <mat-icon aria-hidden="true">search</mat-icon> Rechercher
+      </button>
+    </div>
+
+    @if (filtered().length === 0) {
+      <div class="empty-prompt">
+        <mat-icon aria-hidden="true">person_outline</mat-icon>
+        <p>Aucun producteur trouvé</p>
+      </div>
+    } @else {
+      <div class="table-container">
+        <table class="users-table" aria-label="Liste des producteurs">
+          <thead>
+            <tr>
+              <th scope="col">Producteur</th>
+              <th scope="col">Téléphone</th>
+              <th scope="col">Village</th>
+              <th scope="col">Province</th>
+              <th scope="col">Sexe</th>
+              <th scope="col">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (producer of filtered(); track producer.uuid) {
+              <tr>
+                <td>
+                  <div class="user-cell">
+                    <div class="user-avatar" aria-hidden="true">
+                      {{ producer.nom.charAt(0).toUpperCase() }}
+                    </div>
+                    <span>{{ producer.nom }}</span>
+                  </div>
+                </td>
+                <td>{{ producer.telephone }}</td>
+                <td>{{ producer.village }}</td>
+                <td>{{ producer.province }}</td>
+                <td>
+                  <span class="badge" [class]="producer.sexe === 'femme' ? 'badge-femme' : 'badge-homme'">
+                    {{ producer.sexe === 'femme' ? 'Femme' : 'Homme' }}
+                  </span>
+                </td>
+                <td>
+                  <div class="actions">
+                    <a
+                      [routerLink]="['/producteurs', producer.uuid]"
+                      class="btn-icon"
+                      title="Voir les détails"
+                      [attr.aria-label]="'Voir les détails de ' + producer.nom"
+                    >
+                      <mat-icon aria-hidden="true">visibility</mat-icon>
+                    </a>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+
+        <!-- Pagination -->
+        <div class="pagination-controls">
+          <div class="pagination-info">
+            Page {{ currentPage() }} / {{ totalPages() }} &mdash; {{ total() }} producteur(s)
+          </div>
+          <div class="pagination-buttons">
+            <button
+              class="btn btn-secondary"
+              (click)="previousPage()"
+              [disabled]="currentPage() === 1 || loading()"
+              aria-label="Page précédente"
+            >
+              <mat-icon aria-hidden="true">chevron_left</mat-icon>
+              Précédent
+            </button>
+            <button
+              class="btn btn-secondary"
+              (click)="nextPage()"
+              [disabled]="currentPage() >= totalPages() || loading()"
+              aria-label="Page suivante"
+            >
+              Suivant
+              <mat-icon aria-hidden="true">chevron_right</mat-icon>
+            </button>
+          </div>
+        </div>
+      </div>
+    }
+  </section>
+}

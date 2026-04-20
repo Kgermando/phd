@@ -67,7 +67,7 @@ export const routes: Routes = [
       {
         path: 'utilisateurs/:id',
         canActivate: [nonProducteurGuard],
-        loadComponent: () => import('./pages/users/users-list').then((m) => m.UsersListComponent),
+        loadComponent: () => import('./pages/users/user-view').then((m) => m.UserViewComponent),
       },
       {
         path: 'utilisateurs/:id/modifier',
