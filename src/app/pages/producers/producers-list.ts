@@ -6,7 +6,6 @@ import { Producer, ProducerStats } from '../../models/models';
 import { ProducersService } from '../../services/producers.service';
 import { AuthService } from '../../auth/services/auth.service';
 import { NOMS_PROVINCES, getTerritoiresByProvince } from '../../utils/rdc-geo';
-import { scoreProducer } from '../../utils/scoring';
 
 @Component({
   selector: 'app-producers-list',
@@ -136,8 +135,7 @@ export class ProducersListComponent implements OnInit {
   }
 
   isEligible(p: Producer): boolean {
-    // Use computed score as a preliminary classification even before a manual score exists
-    return scoreProducer(p).total >= 60;
+    return this.getScore(p) >= 60;
   }
 
   totalha(p: Producer): number {

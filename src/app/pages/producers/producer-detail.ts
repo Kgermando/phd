@@ -111,6 +111,14 @@ export class ProducerDetailComponent implements OnInit {
     this.editingScore.set(null);
   }
 
+  getFieldValue(key: keyof Score): number {
+    return +(this.scoreForm.get(key as string)?.value ?? 0);
+  }
+
+  isFieldOver(key: keyof Score, max: number): boolean {
+    return this.getFieldValue(key) > max;
+  }
+
   async submitScore(): Promise<void> {
     if (this.scoreForm.invalid) return;
     this.savingScore.set(true);

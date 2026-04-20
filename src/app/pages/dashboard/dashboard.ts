@@ -7,7 +7,7 @@ import { firstValueFrom } from 'rxjs';
 import { NgApexchartsModule } from 'ng-apexcharts';
 import { Producer, PieSlice, ZoneStat, BarStat, UserStats, LineData } from '../../models/models';
 import { ApiService } from '../../services/api.service';
-import { scoreProducer } from '../../utils/scoring';
+import { ProducersService } from '../../services/producers.service';
 
 interface RecentItem extends Producer { score: number; }
 
@@ -24,6 +24,7 @@ const paletteColor = (slice: PieSlice, i: number) => slice.color || PIE_PALETTE[
 export class DashboardComponent implements OnInit {
   private readonly api = inject(ApiService);
   private readonly http = inject(HttpClient);
+  private readonly producersService = inject(ProducersService);
 
   loaded = signal(false);
   error = signal<string | null>(null);
@@ -138,8 +139,17 @@ export class DashboardComponent implements OnInit {
       this.zones.set(s.zones ?? []);
       this.maxZoneCount.set(s.max_zone_count ?? 1);
 
+      const recentProducers = s.recent ?? [];
+      // Fetch the real total score for each recent producer in parallel.
+      // The dashboard endpoint does not preload scores on recent[], so we query
+      // the dedicated endpoint /:uuid/scores/total for each one.
+      const recentScores = await Promise.all(
+        recentProducers.map(p =>
+          p.uuid ? this.producersService.getTotalScoreByProducer(p.uuid) : Promise.resolve(0)
+        )
+      );
       this.recent.set(
-        (s.recent ?? []).map(p => ({ ...p, score: Math.round(scoreProducer(p).total) }))
+        recentProducers.map((p, i) => ({ ...p, score: recentScores[i] }))
       );
 
       this.statutFoncierPie.set(s.statut_foncier_pie ?? []);

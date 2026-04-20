@@ -135,16 +135,29 @@
           }
           <div class="score-inputs-grid">
             @for (c of scoreCriteria; track c.key) {
-              <div class="score-input-row">
-                <label [for]="'sc-' + c.key">{{ c.label }} (0-{{ c.max }})</label>
-                <input
-                  [id]="'sc-' + c.key"
-                  type="number"
-                  [formControlName]="c.key"
-                  [min]="0"
-                  [max]="c.max"
-                  class="form-input score-num-input"
-                />
+              <div class="score-input-row" [class.score-input-row-over]="isFieldOver(c.key, c.max)">
+                <label [for]="'sc-' + c.key">{{ c.label }}</label>
+                <div class="score-input-inner">
+                  <input
+                    [id]="'sc-' + c.key"
+                    type="number"
+                    [formControlName]="c.key"
+                    [min]="0"
+                    [max]="c.max"
+                    class="form-input score-num-input"
+                    [class.score-num-over]="isFieldOver(c.key, c.max)"
+                    [attr.aria-describedby]="'sc-' + c.key + '-hint'"
+                  />
+                  <span
+                    [id]="'sc-' + c.key + '-hint'"
+                    class="field-counter"
+                    [class.field-counter-over]="isFieldOver(c.key, c.max)"
+                    aria-live="polite"
+                  >{{ getFieldValue(c.key) }}/{{ c.max }}</span>
+                </div>
+                @if (isFieldOver(c.key, c.max)) {
+                  <span class="field-over-msg" role="alert">Dépasse le maximum de {{ c.max }}</span>
+                }
               </div>
             }
           </div>

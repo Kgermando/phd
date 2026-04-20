@@ -249,6 +249,16 @@
     background: #fff;
   }
 
+  &.score-input-row-over {
+    border-color: #ef5350;
+    background: #fff5f5;
+
+    &:focus-within {
+      border-color: #ef5350;
+      box-shadow: 0 0 0 3px rgba(239, 83, 80, 0.15);
+    }
+  }
+
   label {
     font-size: 11px;
     font-weight: 700;
@@ -256,6 +266,35 @@
     text-transform: uppercase;
     letter-spacing: 0.4px;
   }
+}
+
+.score-input-inner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.score-num-over {
+  color: #ef5350;
+}
+
+.field-counter {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+
+  &.field-counter-over {
+    color: #ef5350;
+    font-weight: 700;
+  }
+}
+
+.field-over-msg {
+  font-size: 11px;
+  color: #ef5350;
+  font-weight: 600;
 }
 
 .score-num-input {

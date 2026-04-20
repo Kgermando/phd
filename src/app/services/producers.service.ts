@@ -420,10 +420,27 @@ export class ProducersService {
 
   async createScore(producerUUID: string, scoreData: Partial<Score>): Promise<Score> {
     this.error.set(null);
+    // Always generate UUID on the frontend and persist locally first (local-first strategy).
+    // This guarantees the same UUID is used whether we're online or offline,
+    // preventing duplicate key errors when the backend no longer generates its own UUID.
+    const uuid = scoreData.uuid ?? crypto.randomUUID();
+    const local = this.addPendingScore(producerUUID, { ...scoreData, uuid });
+
     if (!navigator.onLine) {
-      return this.addPendingScore(producerUUID, scoreData);
+      return local;
     }
-    return this.createScoreOnline(producerUUID, scoreData);
+
+    // Online: attempt an immediate sync and remove from pending on success.
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { _pending, created_at, updated_at, ...payload } = local as any;
+      const synced = await this.createScoreOnline(producerUUID, payload);
+      this.removePendingScore(uuid);
+      return synced;
+    } catch {
+      // Network or server error — keep the local copy; syncPending() will retry.
+      return local;
+    }
   }
 
   private async createScoreOnline(producerUUID: string, scoreData: Partial<Score>): Promise<Score> {
@@ -455,6 +472,20 @@ export class ProducersService {
         { headers: this.getAuthHeaders() },
       )
     );
+  }
+
+  async getTotalScoreByProducer(uuid: string): Promise<number> {
+    try {
+      const response = await firstValueFrom(
+        this.http.get<{ status: string; producer_uuid: string; score_total: number }>(
+          `${this.API_URL}/${uuid}/scores/total`,
+          { headers: this.getAuthHeaders() },
+        )
+      );
+      return response.score_total ?? 0;
+    } catch {
+      return 0;
+    }
   }
 
   async getRecommendedProducers(): Promise<Score[]> {
