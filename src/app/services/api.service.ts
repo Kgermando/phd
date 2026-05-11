@@ -158,6 +158,28 @@ export class ApiService {
   }
 
   /**
+   * Récupère les producteurs paginés d'un utilisateur
+   */
+  getPaginatedProducersByUserUUID(
+    userUUID: string,
+    page: number = 1,
+    limit: number = 15,
+    search: string = ''
+  ): Observable<{
+    status: string;
+    total: number;
+    page: number;
+    limit: number;
+    producers: import('../models/models').Producer[];
+  }> {
+    return this.http
+      .get<any>(`${this.API_URL}/producers/user/${userUUID}/paginate`, {
+        params: { page: page.toString(), limit: limit.toString(), search },
+      })
+      .pipe(catchError(this.handleError));
+  }
+
+  /**
    * Crée un nouvel utilisateur
    */
   createUser(user: Partial<User>): Observable<{ status: string; message: string; data: User }> {

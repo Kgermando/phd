@@ -252,6 +252,35 @@ export class ProducersService {
     }
   }
 
+  async getPaginatedProducersByUserUUID(
+    userUUID: string,
+    page = 1,
+    limit = 15,
+    search = '',
+  ): Promise<{ data: Producer[]; total: number; total_pages: number; current_page: number }> {
+    this.loading.set(true);
+    this.error.set(null);
+    try {
+      const response = await firstValueFrom(
+        this.http.get<{ status: string; total: number; page: number; limit: number; producers: Producer[] }>(
+          `${this.API_URL}/user/${userUUID}/paginate`,
+          {
+            headers: this.getAuthHeaders(),
+            params: { page: page.toString(), limit: limit.toString(), search },
+          },
+        )
+      );
+      const data = response.producers ?? [];
+      const totalPages = Math.ceil((response.total ?? 0) / (response.limit ?? limit));
+      return { data, total: response.total ?? 0, total_pages: totalPages, current_page: response.page ?? page };
+    } catch (err: any) {
+      this.error.set(err.message ?? 'Erreur lors du chargement des producteurs');
+      return { data: [], total: 0, total_pages: 0, current_page: page };
+    } finally {
+      this.loading.set(false);
+    }
+  }
+
   async getProducerByUUID(uuid: string): Promise<Producer | null> {
     this.loading.set(true);
     this.error.set(null);
