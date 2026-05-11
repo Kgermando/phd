@@ -35,7 +35,7 @@
         </div>
       }
 
-      @if (!isOnline()) {
+      @if (!auth.isOnline()) {
         <div class="offline-warning" role="status" aria-live="polite">
           <mat-icon aria-hidden="true">warning</mat-icon>
           <span>Mode hors ligne actif. Utilisez vos identifiants précédemment enregistrés.</span>

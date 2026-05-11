@@ -12,7 +12,6 @@ import { LoginRequest } from '../../../models/models';
 
 @Component({
   selector: 'app-login',
-  standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     CommonModule,
@@ -27,7 +26,7 @@ import { LoginRequest } from '../../../models/models';
   styleUrl: './login.scss',
 })
 export class LoginComponent {
-  private readonly auth = inject(AuthService);
+  protected readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   private readonly fb = inject(FormBuilder);
 
@@ -35,28 +34,12 @@ export class LoginComponent {
   error = signal('');
   loading = signal(false);
   showPassword = signal(false);
-  isOnline = signal(navigator.onLine);
 
   constructor() {
     this.loginForm = this.fb.group({
       identifier: ['', Validators.required],
       password: ['', [Validators.required, Validators.minLength(6)]],
     });
-
-    window.addEventListener('online', () => this.isOnline.set(true));
-    window.addEventListener('offline', () => this.isOnline.set(false));
-
-    this.restoreSession();
-  }
-
-  /**
-   * Restaurer la session depuis le stockage local
-   */
-  private async restoreSession(): Promise<void> {
-    await this.auth.restoreSession();
-    if (this.auth.isLoggedIn()) {
-      this.router.navigate(['/dashboard']);
-    }
   }
 
   /**
@@ -80,7 +63,8 @@ export class LoginComponent {
       const result = await this.auth.login(loginData);
 
       if (result.success) {
-        this.router.navigate(['/dashboard']);
+        const target = this.auth.currentUser()?.role === 'Producteur' ? '/producteurs' : '/dashboard';
+        this.router.navigate([target]);
       } else {
         this.error.set(result.message);
       }

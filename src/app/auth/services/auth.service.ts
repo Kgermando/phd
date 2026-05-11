@@ -108,28 +108,28 @@ export class AuthService {
       const response = await this.authApi.login(loginData).toPromise();
 
       if (response?.data) {
-        // Sauvegarder le token
         const token = response.data;
-        this.currentToken.set(token);
-        localStorage.setItem(TOKEN_KEY, token);
 
-        // Récupérer les infos utilisateur
+        // Récupérer les infos utilisateur AVANT de persister quoi que ce soit
         const userResponse = await this.authApi.getAuthenticatedUser(token).toPromise();
 
         if (userResponse) {
           const loginTime = new Date();
+
+          // Persister le token et les données utilisateur
+          this.currentToken.set(token);
           this.currentUser.set(userResponse);
+          localStorage.setItem(TOKEN_KEY, token);
           localStorage.setItem(USER_KEY, JSON.stringify(userResponse));
           localStorage.setItem(LOGIN_TIME_KEY, loginTime.toISOString());
 
-          // Hash du mot de passe pour l'accès offline
-          const passwordHash = await this.hashPassword(loginData.password, userResponse.uuid);
-
-          // Sauvegarder dans la DB locale pour offline
-          await this.saveUserToLocalSession(userResponse, token, loginTime, passwordHash);
-
           // Démarrer le minuteur d'expiration
           this.startExpiryWatcher(loginTime);
+
+          // Sauvegarde offline en arrière-plan (ne bloque pas la navigation)
+          this.hashPassword(loginData.password, userResponse.uuid).then((passwordHash) => {
+            this.saveUserToLocalSession(userResponse, token, loginTime, passwordHash);
+          });
 
           return { success: true, message: 'Connexion réussie' };
         }
@@ -418,7 +418,7 @@ export class AuthService {
     passwordHash: string
   ): Promise<void> {
     try {
-      const session: LocalSession = {
+      const sessionData = {
         uuid: user.uuid,
         email: user.email,
         telephone: user.telephone,
@@ -433,7 +433,14 @@ export class AuthService {
         isActive: true,
       };
 
-      await db.localSessions.put(session);
+      // Mettre à jour si un enregistrement existe déjà pour cet UUID, sinon insérer
+      const existing = await db.localSessions.where('uuid').equals(user.uuid).first();
+      if (existing?.id !== undefined) {
+        await db.localSessions.update(existing.id, sessionData);
+      } else {
+        await db.localSessions.add(sessionData);
+      }
+
       // Mettre en cache l'utilisateur dans le localStorage
       localStorage.setItem(`user_cache_${user.uuid}`, JSON.stringify(user));
     } catch (error) {

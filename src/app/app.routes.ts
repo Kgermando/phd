@@ -9,6 +9,9 @@ import { AuthService } from './auth/services/auth.service';
 const rootGuard = () => {
   const auth = inject(AuthService);
   const router = inject(Router);
+  if (!auth.isLoggedIn()) {
+    return router.createUrlTree(['/auth/login']);
+  }
   const target = auth.currentUser()?.role === 'Producteur' ? '/producteurs' : '/dashboard';
   return router.createUrlTree([target]);
 };
